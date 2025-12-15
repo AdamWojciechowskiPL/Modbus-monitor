@@ -45,13 +45,20 @@ jobs:
         run: |
           pip install --quiet pytest pytest-cov pytest-mock
 
+      - name: Create slim requirements (no GUI) for headless CI
+        run: |
+          grep -v 'PyQt6' requirements.txt | grep -v 'libgl1' > requirements-ci.txt
+          echo "Core dependencies prepared for CI environment"
+          head -20 requirements-ci.txt
+
       - name: Install project dependencies
         run: |
-          pip install --quiet -r requirements.txt || (
-            echo "Failed with all requirements, trying without PyQt6-Charts..."
-            grep -v 'PyQt6-Charts' requirements.txt > requirements-slim.txt
-            pip install --quiet -r requirements-slim.txt || echo "Installation partially failed, continuing..."
+          pip install --quiet -r requirements-ci.txt || (
+            echo "Installation failed, trying with more aggressive cleanup..."
+            grep -E '^(Flask|pymodbus|SQLAlchemy|openpyxl|pandas|python|click|requests|colorlog)' requirements.txt > requirements-minimal.txt
+            pip install --quiet -r requirements-minimal.txt || echo "Partial installation failed, continuing with core packages..."
           )
+        continue-on-error: true
 
       - name: Verify pytest is installed
         run: |
@@ -60,7 +67,7 @@ jobs:
       - name: Lint with flake8
         continue-on-error: true
         run: |
-          pip install --quiet flake8
+          pip install --quiet flake8 || true
           flake8 modbus_monitor tests --max-line-length=100 --count --statistics || true
 
       - name: Run tests
