@@ -1,17 +1,21 @@
 # dashboard_app.py - Flask app z WebSocket real-time dashboard
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit, send
 from datetime import datetime
 import json
 import threading
 import time
+from pathlib import Path
 
-from modbus_client import ModbusClientManager
-from modbus_database import ModbusDatabase
-from modbus_alerts import AlertsManager, AlertRule
+# Relative imports from parent package
+from ..modbus_client import ModbusClientManager
+from ..modbus_database import ModbusDatabase
+from ..modbus_alerts import AlertsManager, AlertRule
 
-app = Flask(__name__)
+app = Flask(__name__,
+            template_folder=str(Path(__file__).parent / 'templates'),
+            static_folder=str(Path(__file__).parent / 'static'))
 app.config['SECRET_KEY'] = 'modbus-monitor-secret-key'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -85,6 +89,7 @@ class ModbusDashboardServer:
             
             except Exception as e:
                 self.error_count += 1
+                print(f"Error in polling: {e}")
 
 dashboard_server = ModbusDashboardServer()
 
@@ -206,8 +211,6 @@ def handle_disconnect_modbus():
 @socketio.on('add_alert_rule')
 def handle_add_alert_rule(data):
     """Add alert rule"""
-    from modbus_alerts import AlertRule
-    
     rule = AlertRule(
         signal_name=data.get('signal_name'),
         alert_type=data.get('alert_type'),
