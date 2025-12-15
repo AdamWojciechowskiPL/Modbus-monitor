@@ -237,7 +237,7 @@ class ModbusMonitorApp(QMainWindow):
         self.status_dot = QLabel("●")
         self.status_dot.setStyleSheet("color: #ef4444; font-size: 14px;")
         self.status_label = QLabel("Rozłączony")
-        self.status_label.setStyleSheet("color: #cbd5e1;")
+        self.status_label.setStyleSheet("color: #f1f5f9; font-weight: bold;")
         status_layout.addWidget(self.status_dot)
         status_layout.addWidget(self.status_label)
         layout.addLayout(status_layout)
@@ -245,9 +245,9 @@ class ModbusMonitorApp(QMainWindow):
         # Odczyty
         reads_layout = QHBoxLayout()
         reads_label = QLabel("Odczytów:")
-        reads_label.setStyleSheet("color: #94a3b8;")
+        reads_label.setStyleSheet("color: #e2e8f0; font-weight: 500;")
         self.read_count_label = QLabel("0")
-        self.read_count_label.setStyleSheet("color: #06b6d4; font-weight: bold;")
+        self.read_count_label.setStyleSheet("color: #22d3ee; font-weight: bold; font-size: 14px;")
         reads_layout.addWidget(reads_label)
         reads_layout.addStretch()
         reads_layout.addWidget(self.read_count_label)
@@ -256,9 +256,9 @@ class ModbusMonitorApp(QMainWindow):
         # Błędy
         errors_layout = QHBoxLayout()
         errors_label = QLabel("Błędów:")
-        errors_label.setStyleSheet("color: #94a3b8;")
+        errors_label.setStyleSheet("color: #e2e8f0; font-weight: 500;")
         self.error_count_label = QLabel("0")
-        self.error_count_label.setStyleSheet("color: #ef4444; font-weight: bold;")
+        self.error_count_label.setStyleSheet("color: #fb7185; font-weight: bold; font-size: 14px;")
         errors_layout.addWidget(errors_label)
         errors_layout.addStretch()
         errors_layout.addWidget(self.error_count_label)
@@ -434,8 +434,7 @@ class ModbusMonitorApp(QMainWindow):
                 font-size: 11px;
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #d8b4fe 0%, #a855f7 100%);
-                color: #1f1f1f;
+                background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
                 border: 2px solid #9333ea;
             }
             QPushButton:pressed {
@@ -472,14 +471,13 @@ class ModbusMonitorApp(QMainWindow):
         return layout
     
     def create_label(self, text):
-        """Utwórz sformatowanną etykietę"""
+        """Utwórz sformatowanną etykietę - JASNE KOLORY!"""
         label = QLabel(text)
         label.setStyleSheet("""
-            color: #cbd5e1;
-            font-weight: 500;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.3px;
         """)
         return label
     
