@@ -12,18 +12,25 @@ from PyQt6.QtWidgets import (
     QLabel, QComboBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
     QStatusBar, QHeaderView, QTabWidget, QProgressBar
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject, QPointF
 from PyQt6.QtGui import QIcon, QColor, QFont
 
 # Try to import QtChart - if fails, disable chart features
+CHARTS_AVAILABLE = False
 try:
     from PyQt6.QtChart import QChart, QChartView, QLineSeries
     CHARTS_AVAILABLE = True
 except ImportError:
-    CHARTS_AVAILABLE = False
-    print("⚠️  Warning: PyQt6.QtChart not available. Install with: pip install PyQt6-Charts")
-
-from PyQt6.QtCore import QPointF
+    # Create dummy classes if QtChart is not available
+    class QChart:
+        pass
+    class QChartView:
+        pass
+    class QLineSeries:
+        pass
+    print("\n⚠️  Warning: PyQt6.QtChart not available.")
+    print("    Install with: pip install PyQt6-Charts")
+    print()
 
 # Relative imports from parent package
 from ..modbus_client import ModbusClientManager
