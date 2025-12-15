@@ -223,23 +223,7 @@ class ModbusMonitorApp(QMainWindow):
         self.connect_btn.clicked.connect(self.toggle_connection)
         self.connect_btn.setFixedHeight(48)
         self.connect_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
-        self.connect_btn.setStyleSheet("""
-            QPushButton {
-                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                padding: 12px;
-                font-weight: bold;
-                letter-spacing: 0.5px;
-            }
-            QPushButton:hover {
-                background: linear-gradient(135deg, #2dd478 0%, #1ca850 100%);
-            }
-            QPushButton:pressed {
-                background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-            }
-        """)
+        self.update_connect_button_style()
         layout.addWidget(self.connect_btn)
         
         # Statystyki
@@ -281,6 +265,49 @@ class ModbusMonitorApp(QMainWindow):
         layout.addLayout(errors_layout)
         
         return sidebar_widget
+    
+    def update_connect_button_style(self):
+        """Zaktualizuj styl przycisku połączenia"""
+        if self.connected:
+            self.connect_btn.setText("⚧ Rozłącz")
+            self.connect_btn.setStyleSheet("""
+                QPushButton {
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    color: white;
+                    border: 2px solid #991b1b;
+                    border-radius: 10px;
+                    padding: 12px;
+                    font-weight: bold;
+                    letter-spacing: 0.5px;
+                }
+                QPushButton:hover {
+                    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+                    border: 2px solid #7f1d1d;
+                }
+                QPushButton:pressed {
+                    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+                }
+            """)
+        else:
+            self.connect_btn.setText("⚡ Połącz")
+            self.connect_btn.setStyleSheet("""
+                QPushButton {
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    color: white;
+                    border: 2px solid #047857;
+                    border-radius: 10px;
+                    padding: 12px;
+                    font-weight: bold;
+                    letter-spacing: 0.5px;
+                }
+                QPushButton:hover {
+                    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+                    border: 2px solid #065f46;
+                }
+                QPushButton:pressed {
+                    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+                }
+            """)
     
     def create_modern_header(self):
         """Utwórz nowoczesny nagłówek"""
@@ -341,56 +368,103 @@ class ModbusMonitorApp(QMainWindow):
         layout = QHBoxLayout()
         layout.setSpacing(12)
         
-        btn_style = """
-            QPushButton {
-                background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px 16px;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
-            }
-            QPushButton:pressed {
-                background: linear-gradient(135deg, #0d4f5d 0%, #0a3f4d 100%);
-            }
-        """
-        
+        # CSV Button - Bright Cyan
         csv_btn = QPushButton("📥 CSV")
         csv_btn.clicked.connect(self.export_csv)
-        csv_btn.setStyleSheet(btn_style)
-        layout.addWidget(csv_btn)
-        
-        excel_btn = QPushButton("📥 Excel")
-        excel_btn.clicked.connect(self.export_excel)
-        excel_btn.setStyleSheet(btn_style)
-        layout.addWidget(excel_btn)
-        
-        json_btn = QPushButton("📥 JSON")
-        json_btn.clicked.connect(self.export_json)
-        json_btn.setStyleSheet(btn_style)
-        layout.addWidget(json_btn)
-        
-        clear_btn = QPushButton("🗑️ Wyczyść")
-        clear_btn.clicked.connect(self.clear_data)
-        clear_btn.setStyleSheet("""
+        csv_btn.setMinimumHeight(40)
+        csv_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+        csv_btn.setStyleSheet("""
             QPushButton {
-                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
                 color: white;
-                border: none;
+                border: 2px solid #0369a1;
                 border-radius: 8px;
-                padding: 12px 16px;
+                padding: 10px 16px;
                 font-weight: bold;
                 font-size: 11px;
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+                border: 2px solid #0284c7;
             }
             QPushButton:pressed {
-                background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+                background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            }
+        """)
+        layout.addWidget(csv_btn)
+        
+        # Excel Button - Bright Green
+        excel_btn = QPushButton("📥 Excel")
+        excel_btn.clicked.connect(self.export_excel)
+        excel_btn.setMinimumHeight(40)
+        excel_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+        excel_btn.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+                color: white;
+                border: 2px solid #166534;
+                border-radius: 8px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+                border: 2px solid #15803d;
+            }
+            QPushButton:pressed {
+                background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+            }
+        """)
+        layout.addWidget(excel_btn)
+        
+        # JSON Button - Bright Purple
+        json_btn = QPushButton("📥 JSON")
+        json_btn.clicked.connect(self.export_json)
+        json_btn.setMinimumHeight(40)
+        json_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+        json_btn.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+                color: white;
+                border: 2px solid #7c3aed;
+                border-radius: 8px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(135deg, #d8b4fe 0%, #a855f7 100%);
+                color: #1f1f1f;
+                border: 2px solid #9333ea;
+            }
+            QPushButton:pressed {
+                background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+            }
+        """)
+        layout.addWidget(json_btn)
+        
+        # Clear Button - Bright Red/Orange
+        clear_btn = QPushButton("🗑️ Wyczyść")
+        clear_btn.clicked.connect(self.clear_data)
+        clear_btn.setMinimumHeight(40)
+        clear_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
+        clear_btn.setStyleSheet("""
+            QPushButton {
+                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                color: white;
+                border: 2px solid #c2410c;
+                border-radius: 8px;
+                padding: 10px 16px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+                border: 2px solid #ea580c;
+            }
+            QPushButton:pressed {
+                background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
             }
         """)
         layout.addWidget(clear_btn)
@@ -507,23 +581,7 @@ class ModbusMonitorApp(QMainWindow):
             
             if success:
                 self.connected = True
-                self.connect_btn.setText("⚧ Rozłącz")
-                self.connect_btn.setStyleSheet("""
-                    QPushButton {
-                        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                        color: white;
-                        border: none;
-                        border-radius: 10px;
-                        padding: 12px;
-                        font-weight: bold;
-                    }
-                    QPushButton:hover {
-                        background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-                    }
-                    QPushButton:pressed {
-                        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
-                    }
-                """)
+                self.update_connect_button_style()
                 self.status_label.setText("Połączony")
                 self.status_dot.setStyleSheet("color: #22c55e; font-size: 14px;")
                 self.statusBar.showMessage(f"✓ Połączono z {host}:{port}")
@@ -545,23 +603,7 @@ class ModbusMonitorApp(QMainWindow):
             self.poll_timer.stop()
             self.modbus_manager.disconnect()
             self.connected = False
-            self.connect_btn.setText("⚡ Połącz")
-            self.connect_btn.setStyleSheet("""
-                QPushButton {
-                    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-                    color: white;
-                    border: none;
-                    border-radius: 10px;
-                    padding: 12px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background: linear-gradient(135deg, #2dd478 0%, #1ca850 100%);
-                }
-                QPushButton:pressed {
-                    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-                }
-            """)
+            self.update_connect_button_style()
             self.status_label.setText("Rozłączony")
             self.status_dot.setStyleSheet("color: #ef4444; font-size: 14px;")
             self.statusBar.showMessage("⚧ Rozłączono")
