@@ -314,6 +314,12 @@
             color: var(--danger);
         }
         
+        .settings-divider {
+            border-top: 2px solid #e5e7eb;
+            margin: 1rem 0;
+            padding-top: 1rem;
+        }
+        
         @media (max-width: 768px) {
             .container-main {
                 padding: 1rem 0;
@@ -369,6 +375,33 @@
                                 <option value="rtu">Modbus RTU Serial</option>
                             </select>
                         </div>
+                        
+                        <div class="settings-divider">
+                            <label class="form-label fw-bold">Konfiguracja Sygnałów</label>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Adres Startowy</label>
+                            <input type="number" class="form-control" id="inputStartAddress" value="0" min="0" max="65535">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Typ Rejestru</label>
+                            <select class="form-select" id="selectRegisterType">
+                                <option value="holding">Holding Registers</option>
+                                <option value="input">Input Registers</option>
+                                <option value="coil">Coils</option>
+                                <option value="discrete">Discrete Inputs</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Liczba Sygnałów</label>
+                            <input type="number" class="form-control" id="inputCount" value="5" min="1" max="100">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interwał (ms)</label>
+                            <input type="number" class="form-control" id="inputInterval" value="1000" min="100" step="100">
+                        </div>
+                        
                         <div class="d-grid gap-2">
                             <button class="btn btn-primary btn-custom" id="btnConnect" onclick="connectModbus()">
                                 <i class="fas fa-link"></i> Połącz
