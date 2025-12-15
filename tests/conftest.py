@@ -329,6 +329,22 @@ def all_signals():
     return TestData.SAMPLE_SIGNALS
 
 
+@pytest.fixture
+def sample_signals():
+    """Provide sample signals for data exporter tests"""
+    return [
+        {'name': 'Temperature', 'value': 25.5, 'unit': '°C'},
+        {'name': 'Humidity', 'value': 45.0, 'unit': '%'},
+        {'name': 'Pressure', 'value': 1013.25, 'unit': 'hPa'}
+    ]
+
+
+@pytest.fixture
+def empty_signals():
+    """Provide empty signals list for data exporter tests"""
+    return []
+
+
 # ============================================================================
 # File I/O Fixtures
 # ============================================================================
