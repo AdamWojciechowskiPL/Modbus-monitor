@@ -98,9 +98,9 @@ class ModbusMonitorApp(QMainWindow):
         self.statusBar = QStatusBar()
         self.statusBar.setStyleSheet("""
             QStatusBar {
-                background-color: rgba(30, 41, 59, 0.5);
-                color: #cbd5e1;
-                border-top: 1px solid rgba(100, 200, 220, 0.2);
+                background: linear-gradient(90deg, rgba(15, 23, 42, 0.8), rgba(20, 30, 48, 0.8));
+                color: #e0f2fe;
+                border-top: 2px solid #0ea5e9;
                 padding: 8px 12px;
             }
         """)
@@ -108,13 +108,13 @@ class ModbusMonitorApp(QMainWindow):
         self.statusBar.showMessage("✓ Gotowy")
     
     def create_modern_sidebar(self):
-        """Utwórz nowoczesny sidebar z konfiguracją"""
+        """Utwórz nowoczesny sidebar z konfiguracją - VIBRANT COLORS"""
         sidebar_widget = QWidget()
         sidebar_widget.setFixedWidth(320)
         sidebar_widget.setStyleSheet("""
             QWidget#sidebar {
-                background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
-                border-right: 1px solid rgba(100, 200, 220, 0.1);
+                background: linear-gradient(180deg, rgba(6, 20, 36, 0.98), rgba(12, 30, 48, 0.98));
+                border-right: 2px solid rgba(14, 165, 233, 0.3);
             }
         """)
         sidebar_widget.setObjectName("sidebar")
@@ -123,16 +123,16 @@ class ModbusMonitorApp(QMainWindow):
         layout.setContentsMargins(20, 24, 20, 24)
         layout.setSpacing(12)
         
-        # Logo
+        # Logo - VIBRANT CYAN
         logo_label = QLabel("⚡ Konfiguracja")
         logo_label.setFont(QFont("Inter", 16, QFont.Weight.Bold))
-        logo_label.setStyleSheet("color: #06b6d4;")
+        logo_label.setStyleSheet("color: #00d9ff; text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);")
         layout.addWidget(logo_label)
         
-        # Separator
+        # Separator - GLOWING
         sep = QWidget()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet("background-color: rgba(100, 200, 220, 0.1);")
+        sep.setFixedHeight(2)
+        sep.setStyleSheet("background: linear-gradient(90deg, transparent, rgba(0, 217, 255, 0.4), transparent);")
         layout.addWidget(sep)
         
         # Form
@@ -161,14 +161,14 @@ class ModbusMonitorApp(QMainWindow):
         
         # Separator
         sep2 = QWidget()
-        sep2.setFixedHeight(1)
-        sep2.setStyleSheet("background-color: rgba(100, 200, 220, 0.1);")
+        sep2.setFixedHeight(2)
+        sep2.setStyleSheet("background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);")
         layout.addWidget(sep2)
         
-        # Sygnały
+        # Sygnały - VIBRANT PURPLE
         signals_label = QLabel("⎇ Sygnały")
         signals_label.setFont(QFont("Inter", 14, QFont.Weight.Bold))
-        signals_label.setStyleSheet("color: #8b5cf6;")
+        signals_label.setStyleSheet("color: #d946ef; text-shadow: 0 0 8px rgba(217, 70, 239, 0.4);")
         layout.addWidget(signals_label)
         
         signals_form = QFormLayout()
@@ -214,8 +214,8 @@ class ModbusMonitorApp(QMainWindow):
         
         # Separator
         sep3 = QWidget()
-        sep3.setFixedHeight(1)
-        sep3.setStyleSheet("background-color: rgba(100, 200, 220, 0.1);")
+        sep3.setFixedHeight(2)
+        sep3.setStyleSheet("background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.3), transparent);")
         layout.addWidget(sep3)
         
         # Przycisk połączenia
@@ -226,39 +226,39 @@ class ModbusMonitorApp(QMainWindow):
         self.update_connect_button_style()
         layout.addWidget(self.connect_btn)
         
-        # Statystyki
+        # Statystyki - VIBRANT ORANGE
         stats_label = QLabel("📄 Statystyki")
         stats_label.setFont(QFont("Inter", 12, QFont.Weight.Bold))
-        stats_label.setStyleSheet("color: #06b6d4;")
+        stats_label.setStyleSheet("color: #ff8c42; text-shadow: 0 0 8px rgba(255, 140, 66, 0.4);")
         layout.addWidget(stats_label)
         
         # Status
         status_layout = QHBoxLayout()
         self.status_dot = QLabel("●")
-        self.status_dot.setStyleSheet("color: #ef4444; font-size: 14px;")
+        self.status_dot.setStyleSheet("color: #ff4757; font-size: 14px;")
         self.status_label = QLabel("Rozłączony")
-        self.status_label.setStyleSheet("color: #f1f5f9; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #e0f2fe; font-weight: bold;")
         status_layout.addWidget(self.status_dot)
         status_layout.addWidget(self.status_label)
         layout.addLayout(status_layout)
         
-        # Odczyty
+        # Odczyty - VIBRANT CYAN
         reads_layout = QHBoxLayout()
         reads_label = QLabel("Odczytów:")
-        reads_label.setStyleSheet("color: #cbd5e1; font-weight: 500;")
+        reads_label.setStyleSheet("color: #7dd3fc; font-weight: 500;")
         self.read_count_label = QLabel("0")
-        self.read_count_label.setStyleSheet("color: #22d3ee; font-weight: bold; font-size: 14px;")
+        self.read_count_label.setStyleSheet("color: #00d9ff; font-weight: bold; font-size: 14px; text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);")
         reads_layout.addWidget(reads_label)
         reads_layout.addStretch()
         reads_layout.addWidget(self.read_count_label)
         layout.addLayout(reads_layout)
         
-        # Błędy
+        # Błędy - VIBRANT RED
         errors_layout = QHBoxLayout()
         errors_label = QLabel("Błędów:")
-        errors_label.setStyleSheet("color: #cbd5e1; font-weight: 500;")
+        errors_label.setStyleSheet("color: #fca5a5; font-weight: 500;")
         self.error_count_label = QLabel("0")
-        self.error_count_label.setStyleSheet("color: #fb7185; font-weight: bold; font-size: 14px;")
+        self.error_count_label.setStyleSheet("color: #ff6b6b; font-weight: bold; font-size: 14px; text-shadow: 0 0 8px rgba(255, 107, 107, 0.5);")
         errors_layout.addWidget(errors_label)
         errors_layout.addStretch()
         errors_layout.addWidget(self.error_count_label)
@@ -267,45 +267,47 @@ class ModbusMonitorApp(QMainWindow):
         return sidebar_widget
     
     def update_connect_button_style(self):
-        """Zaktualizuj styl przycisku połączenia"""
+        """Zaktualizuj styl przycisku połączenia - VIBRANT GRADIENTS"""
         if self.connected:
             self.connect_btn.setText("⎇ Rozłącz")
             self.connect_btn.setStyleSheet("""
                 QPushButton {
-                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    background: linear-gradient(135deg, #ff4757 0%, #ff6b6b 50%, #ff3838 100%);
                     color: white;
-                    border: 2px solid #991b1b;
-                    border-radius: 10px;
+                    border: 2px solid #ff1744;
+                    border-radius: 12px;
                     padding: 12px;
                     font-weight: bold;
                     letter-spacing: 0.5px;
+                    box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
                 }
                 QPushButton:hover {
-                    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-                    border: 2px solid #7f1d1d;
+                    background: linear-gradient(135deg, #ff6b6b 0%, #ff8a80 50%, #ff4757 100%);
+                    box-shadow: 0 0 30px rgba(255, 71, 87, 0.8);
                 }
                 QPushButton:pressed {
-                    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+                    background: linear-gradient(135deg, #ff1744 0%, #ff3838 50%, #d32f2f 100%);
                 }
             """)
         else:
             self.connect_btn.setText("⚡ Połącz")
             self.connect_btn.setStyleSheet("""
                 QPushButton {
-                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                    color: white;
-                    border: 2px solid #047857;
-                    border-radius: 10px;
+                    background: linear-gradient(135deg, #00d4ff 0%, #00b8d4 50%, #0097a7 100%);
+                    color: #000;
+                    border: 2px solid #006064;
+                    border-radius: 12px;
                     padding: 12px;
                     font-weight: bold;
                     letter-spacing: 0.5px;
+                    box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
                 }
                 QPushButton:hover {
-                    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-                    border: 2px solid #065f46;
+                    background: linear-gradient(135deg, #00e5ff 0%, #26c6da 50%, #00acc1 100%);
+                    box-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
                 }
                 QPushButton:pressed {
-                    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+                    background: linear-gradient(135deg, #006064 0%, #00838f 50%, #004d40 100%);
                 }
             """)
     
@@ -315,7 +317,7 @@ class ModbusMonitorApp(QMainWindow):
         
         title = QLabel("📼 Monitorowanie sygnałów")
         title.setFont(QFont("Inter", 24, QFont.Weight.Bold))
-        title.setStyleSheet("color: #f1f5f9;")
+        title.setStyleSheet("color: #e0f2fe;")
         layout.addWidget(title)
         
         layout.addStretch()
@@ -323,38 +325,39 @@ class ModbusMonitorApp(QMainWindow):
         return layout
     
     def create_modern_table(self):
-        """Utwórz nowoczesną tabelę sygnałów"""
+        """Utwórz nowoczesną tabelę sygnałów - VIBRANT THEME"""
         table = QTableWidget()
         table.setColumnCount(7)
         table.setHorizontalHeaderLabels([
             "ID", "Adres", "Nazwa", "Wartość", "Jednostka", "Status", "Ostatni Odczyt"
         ])
         
-        # Stylowanie tabeli
+        # Stylowanie tabeli - VIBRANT GRADIENTS
         table.setStyleSheet("""
             QTableWidget {
-                background-color: rgba(15, 23, 42, 0.6);
-                alternate-background-color: rgba(30, 41, 59, 0.6);
-                gridline-color: rgba(100, 200, 220, 0.1);
-                color: #f1f5f9;
-                border: 1px solid rgba(100, 200, 220, 0.2);
-                border-radius: 10px;
+                background-color: rgba(6, 20, 36, 0.7);
+                alternate-background-color: rgba(12, 30, 48, 0.7);
+                gridline-color: rgba(0, 212, 255, 0.15);
+                color: #e0f2fe;
+                border: 2px solid rgba(0, 212, 255, 0.3);
+                border-radius: 12px;
             }
             QHeaderView::section {
-                background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+                background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #0ea5e9 100%);
                 color: white;
                 padding: 12px 8px;
                 border: none;
                 font-weight: bold;
                 font-size: 13px;
                 letter-spacing: 0.5px;
+                border-radius: 4px;
             }
             QTableWidget::item {
                 padding: 12px 8px;
-                border-bottom: 1px solid rgba(100, 200, 220, 0.08);
+                border-bottom: 1px solid rgba(0, 212, 255, 0.1);
             }
             QTableWidget::item:selected {
-                background-color: rgba(100, 200, 220, 0.15);
+                background-color: rgba(0, 212, 255, 0.2);
             }
         """)
         
@@ -362,60 +365,62 @@ class ModbusMonitorApp(QMainWindow):
         header = table.horizontalHeader()
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         
-        # Wysokość rzędów - POWIĘKSZONA
+        # Wysokość rzędów
         table.verticalHeader().setDefaultSectionSize(40)
         table.setAlternatingRowColors(True)
         
         return table
     
     def create_export_buttons(self):
-        """Utwórz nowoczesne przyciski eksportu"""
+        """Utwórz nowoczesne przyciski eksportu - VIBRANT COLORS"""
         layout = QHBoxLayout()
         layout.setSpacing(12)
         
-        # CSV Button - Bright Cyan
+        # CSV Button - BRIGHT CYAN
         csv_btn = QPushButton("📥 CSV")
         csv_btn.clicked.connect(self.export_csv)
         csv_btn.setMinimumHeight(40)
         csv_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
         csv_btn.setStyleSheet("""
             QPushButton {
-                background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-                color: white;
-                border: 2px solid #0369a1;
-                border-radius: 8px;
+                background: linear-gradient(135deg, #00d9ff 0%, #0ea5e9 100%);
+                color: #000;
+                border: 2px solid #006064;
+                border-radius: 10px;
                 padding: 10px 16px;
                 font-weight: bold;
                 font-size: 11px;
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-                border: 2px solid #0284c7;
+                background: linear-gradient(135deg, #00e5ff 0%, #26c6da 100%);
+                box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
             }
             QPushButton:pressed {
-                background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+                background: linear-gradient(135deg, #006064 0%, #00838f 100%);
             }
         """)
         layout.addWidget(csv_btn)
         
-        # Excel Button - Bright Green
+        # Excel Button - BRIGHT GREEN
         excel_btn = QPushButton("📥 Excel")
         excel_btn.clicked.connect(self.export_excel)
         excel_btn.setMinimumHeight(40)
         excel_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
         excel_btn.setStyleSheet("""
             QPushButton {
-                background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
                 color: white;
-                border: 2px solid #166534;
-                border-radius: 8px;
+                border: 2px solid #15803d;
+                border-radius: 10px;
                 padding: 10px 16px;
                 font-weight: bold;
                 font-size: 11px;
+                box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-                border: 2px solid #15803d;
+                background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
             }
             QPushButton:pressed {
                 background: linear-gradient(135deg, #15803d 0%, #166534 100%);
@@ -423,52 +428,54 @@ class ModbusMonitorApp(QMainWindow):
         """)
         layout.addWidget(excel_btn)
         
-        # JSON Button - Bright Purple
+        # JSON Button - BRIGHT PURPLE
         json_btn = QPushButton("📥 JSON")
         json_btn.clicked.connect(self.export_json)
         json_btn.setMinimumHeight(40)
         json_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
         json_btn.setStyleSheet("""
             QPushButton {
-                background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+                background: linear-gradient(135deg, #d946ef 0%, #a855f7 100%);
                 color: white;
                 border: 2px solid #7c3aed;
-                border-radius: 8px;
+                border-radius: 10px;
                 padding: 10px 16px;
                 font-weight: bold;
                 font-size: 11px;
+                box-shadow: 0 0 15px rgba(217, 70, 239, 0.4);
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
-                border: 2px solid #9333ea;
+                background: linear-gradient(135deg, #f472b6 0%, #d946ef 100%);
+                box-shadow: 0 0 25px rgba(217, 70, 239, 0.6);
             }
             QPushButton:pressed {
-                background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+                background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
             }
         """)
         layout.addWidget(json_btn)
         
-        # Clear Button - Bright Red/Orange
+        # Clear Button - BRIGHT ORANGE/RED
         clear_btn = QPushButton("🗑️ Wyczyść")
         clear_btn.clicked.connect(self.clear_data)
         clear_btn.setMinimumHeight(40)
         clear_btn.setFont(QFont("Inter", 11, QFont.Weight.Bold))
         clear_btn.setStyleSheet("""
             QPushButton {
-                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                background: linear-gradient(135deg, #f97316 0%, #ff6b35 100%);
                 color: white;
                 border: 2px solid #c2410c;
-                border-radius: 8px;
+                border-radius: 10px;
                 padding: 10px 16px;
                 font-weight: bold;
                 font-size: 11px;
+                box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
             }
             QPushButton:hover {
-                background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-                border: 2px solid #ea580c;
+                background: linear-gradient(135deg, #fb923c 0%, #fbbf24 100%);
+                box-shadow: 0 0 25px rgba(249, 115, 22, 0.6);
             }
             QPushButton:pressed {
-                background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+                background: linear-gradient(135deg, #c2410c 0%, #92400e 100%);
             }
         """)
         layout.addWidget(clear_btn)
@@ -476,88 +483,94 @@ class ModbusMonitorApp(QMainWindow):
         return layout
     
     def create_label(self, text):
-        """Utwórz sformatowaną etykietę - JASNE KOLORY Z WYMAZANĄ WIDOCZNOŚĆ!"""
+        """Utwórz sformatowaną etykietę - VIBRANT CYAN"""
         label = QLabel(text)
-        # Wyłącz jasnsze kolory - użyj jasny cyan dla lepszej widoczności
         label.setStyleSheet("""
-            color: #22d3ee;
+            color: #00d9ff;
             font-weight: 700;
             font-size: 12px;
             letter-spacing: 0.3px;
+            text-shadow: 0 0 5px rgba(0, 217, 255, 0.3);
         """)
         return label
     
     def get_input_style(self):
         return """
             QLineEdit {
-                background-color: rgba(30, 41, 59, 0.8);
-                border: 1px solid rgba(100, 200, 220, 0.3);
+                background-color: rgba(12, 30, 48, 0.8);
+                border: 2px solid rgba(0, 212, 255, 0.3);
                 border-radius: 8px;
-                color: #f1f5f9;
+                color: #e0f2fe;
                 padding: 8px 12px;
                 font-size: 12px;
             }
             QLineEdit:focus {
-                border: 2px solid #06b6d4;
-                background-color: rgba(30, 41, 59, 0.95);
+                border: 2px solid #00d9ff;
+                background-color: rgba(12, 30, 48, 0.95);
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
             }
         """
     
     def get_spinbox_style(self):
         return """
             QSpinBox {
-                background-color: rgba(30, 41, 59, 0.8);
-                border: 1px solid rgba(100, 200, 220, 0.3);
+                background-color: rgba(12, 30, 48, 0.8);
+                border: 2px solid rgba(0, 212, 255, 0.3);
                 border-radius: 8px;
-                color: #f1f5f9;
+                color: #e0f2fe;
                 padding: 6px 10px;
                 font-size: 12px;
             }
             QSpinBox:focus {
-                border: 2px solid #06b6d4;
+                border: 2px solid #00d9ff;
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
             }
             QSpinBox::up-button, QSpinBox::down-button {
-                background-color: rgba(6, 182, 212, 0.2);
+                background-color: rgba(0, 212, 255, 0.2);
                 border: none;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: rgba(0, 212, 255, 0.4);
             }
         """
     
     def get_combo_style(self):
         return """
             QComboBox {
-                background-color: rgba(30, 41, 59, 0.8);
-                border: 1px solid rgba(100, 200, 220, 0.3);
+                background-color: rgba(12, 30, 48, 0.8);
+                border: 2px solid rgba(0, 212, 255, 0.3);
                 border-radius: 8px;
-                color: #f1f5f9;
+                color: #e0f2fe;
                 padding: 6px 10px;
                 font-size: 12px;
             }
             QComboBox:focus {
-                border: 2px solid #06b6d4;
+                border: 2px solid #00d9ff;
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
             }
             QComboBox::drop-down {
                 border: none;
-                background: rgba(6, 182, 212, 0.1);
+                background: rgba(0, 212, 255, 0.1);
             }
             QComboBox QAbstractItemView {
-                background-color: rgba(30, 41, 59, 0.9);
-                color: #f1f5f9;
-                selection-background-color: rgba(6, 182, 212, 0.3);
+                background-color: rgba(12, 30, 48, 0.95);
+                color: #e0f2fe;
+                selection-background-color: rgba(0, 212, 255, 0.3);
                 border-radius: 6px;
             }
         """
     
     def setup_modern_styles(self):
-        """Ustaw nowoczesne style całej aplikacji"""
+        """Ustaw nowoczesne style całej aplikacji - VIBRANT DARK THEME"""
         self.setStyleSheet("""
             QMainWindow {
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-                color: #f1f5f9;
+                background: linear-gradient(135deg, #030712 0%, #0f1419 25%, #0a1428 50%, #0d1825 75%, #030712 100%);
+                color: #e0f2fe;
             }
             QStatusBar {
-                background-color: rgba(30, 41, 59, 0.5);
-                color: #cbd5e1;
-                border-top: 1px solid rgba(100, 200, 220, 0.2);
+                background: linear-gradient(90deg, rgba(6, 20, 36, 0.8), rgba(12, 30, 48, 0.8));
+                color: #00d9ff;
+                border-top: 2px solid #0ea5e9;
             }
         """)
     
@@ -587,7 +600,7 @@ class ModbusMonitorApp(QMainWindow):
                 self.connected = True
                 self.update_connect_button_style()
                 self.status_label.setText("Połączony")
-                self.status_dot.setStyleSheet("color: #22c55e; font-size: 14px;")
+                self.status_dot.setStyleSheet("color: #22c55e; font-size: 14px; text-shadow: 0 0 10px rgba(34, 197, 94, 0.6);")
                 self.statusBar.showMessage(f"✓ Połączono z {host}:{port}")
                 
                 # Uruchom timer
@@ -609,7 +622,7 @@ class ModbusMonitorApp(QMainWindow):
             self.connected = False
             self.update_connect_button_style()
             self.status_label.setText("Rozłączony")
-            self.status_dot.setStyleSheet("color: #ef4444; font-size: 14px;")
+            self.status_dot.setStyleSheet("color: #ff4757; font-size: 14px; text-shadow: 0 0 10px rgba(255, 71, 87, 0.6);")
             self.statusBar.showMessage("⎇ Rozłączono")
         
         except Exception as e:
@@ -653,7 +666,7 @@ class ModbusMonitorApp(QMainWindow):
             self.error_count_label.setText(str(self.error_count))
     
     def update_signals_table(self, signals):
-        """Zaktualizuj tabelę sygnałów"""
+        """Zaktualizuj tabelę sygnałów - VIBRANT COLORS"""
         try:
             self.signals_data = signals
             self.read_count += 1
@@ -663,33 +676,33 @@ class ModbusMonitorApp(QMainWindow):
             self.signals_table.setRowCount(len(signals))
             
             for row, signal in enumerate(signals):
-                # ID
+                # ID - VIBRANT CYAN
                 id_item = QTableWidgetItem(str(signal['id'] + 1))
-                id_item.setForeground(QColor("#06b6d4"))
-                id_item.setFont(QFont("Inter", 11))
+                id_item.setForeground(QColor("#00d9ff"))
+                id_item.setFont(QFont("Inter", 11, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 0, id_item)
                 
-                # Adres
+                # Adres - LIGHT BLUE
                 addr_item = QTableWidgetItem(str(signal['address']))
-                addr_item.setForeground(QColor("#94a3b8"))
+                addr_item.setForeground(QColor("#7dd3fc"))
                 addr_item.setFont(QFont("Inter", 11))
                 self.signals_table.setItem(row, 1, addr_item)
                 
-                # Nazwa - BRIGHT CYAN + BOLD + LARGER FONT
+                # Nazwa - BRIGHT CYAN + BOLD
                 name_item = QTableWidgetItem(signal['name'])
-                name_item.setForeground(QColor("#22d3ee"))  # Bright cyan
-                name_item.setFont(QFont("Inter", 12, QFont.Weight.Bold))  # Bold and larger
+                name_item.setForeground(QColor("#00e5ff"))
+                name_item.setFont(QFont("Inter", 12, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 2, name_item)
                 
-                # Wartość
+                # Wartość - VIBRANT GREEN
                 value_item = QTableWidgetItem(str(signal['value']))
-                value_item.setForeground(QColor("#10b981"))
+                value_item.setForeground(QColor("#4ade80"))
                 value_item.setFont(QFont("Courier", 12, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 3, value_item)
                 
-                # Jednostka
+                # Jednostka - VIBRANT PURPLE
                 unit_item = QTableWidgetItem(signal['unit'])
-                unit_item.setForeground(QColor("#8b5cf6"))
+                unit_item.setForeground(QColor("#d946ef"))
                 unit_item.setFont(QFont("Inter", 11))
                 self.signals_table.setItem(row, 4, unit_item)
                 
@@ -698,13 +711,13 @@ class ModbusMonitorApp(QMainWindow):
                 if signal['status'] == 'ok':
                     status_item.setForeground(QColor("#22c55e"))
                 else:
-                    status_item.setForeground(QColor("#ef4444"))
+                    status_item.setForeground(QColor("#ff4757"))
                 status_item.setFont(QFont("Inter", 11, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 5, status_item)
                 
-                # Ostatni Odczyt
+                # Ostatni Odczyt - MUTED CYAN
                 time_item = QTableWidgetItem(signal['lastUpdate'])
-                time_item.setForeground(QColor("#64748b"))
+                time_item.setForeground(QColor("#06b6d4"))
                 time_item.setFont(QFont("Inter", 10))
                 self.signals_table.setItem(row, 6, time_item)
         
