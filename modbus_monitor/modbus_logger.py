@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 from pathlib import Path
 from datetime import datetime
+import os
 
 class ModbusLogger:
     """Manager logowania dla aplikacji Modbus"""
@@ -89,3 +90,74 @@ def get_modbus_logger(log_dir='logs', log_level=logging.INFO):
     if _logger_instance is None:
         _logger_instance = ModbusLogger(log_dir, log_level)
     return _logger_instance
+
+
+def setup_logger(name='modbus_monitor', log_dir='logs', log_level=logging.INFO):
+    """
+    Skonfiguruj logger (dla testów i konfiguracji)
+    
+    Args:
+        name: Nazwa loggera
+        log_dir: Folder na logi
+        log_level: Poziom logowania
+    
+    Returns:
+        Logger instance
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(log_level)
+    
+    # Unikaj duplikacji handlerów
+    if logger.handlers:
+        return logger
+    
+    # Utwórz folder jeśli nie istnieje
+    log_path = Path(log_dir)
+    log_path.mkdir(exist_ok=True)
+    
+    # File handler
+    log_file = log_path / f"{name}_{datetime.now().strftime('%Y%m%d')}.log"
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file,
+        maxBytes=10*1024*1024,
+        backupCount=7
+    )
+    file_handler.setLevel(log_level)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Add handlers
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
+
+
+def get_logger(name='modbus_monitor'):
+    """
+    Pobierz istniejący logger lub utwórz nowy
+    
+    Args:
+        name: Nazwa loggera
+    
+    Returns:
+        Logger instance
+    """
+    logger = logging.getLogger(name)
+    
+    # Jeśli logger jeszcze nie ma handlerów, skonfiguruj go
+    if not logger.handlers:
+        return setup_logger(name)
+    
+    return logger
