@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QLineEdit, QSpinBox,
     QLabel, QComboBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
-    QStatusBar, QHeaderView, QTabWidget, QProgressBar
+    QStatusBar, QHeaderView, QTabWidget, QProgressBar, QStyle
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject, QPointF
 from PyQt6.QtGui import QIcon, QColor, QFont
@@ -98,7 +98,9 @@ class ModbusMonitorApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Modbus Monitor - Desktop")
         self.setGeometry(100, 100, 1200, 700)
-        self.setStyle('Fusion')
+        
+        # Don't set style - use system default
+        # self.setStyle('Fusion') causes error in PyQt6
         
         self.modbus_manager = ModbusClientManager()
         self.data_exporter = DataExporter()
