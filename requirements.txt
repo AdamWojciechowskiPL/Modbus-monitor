@@ -1,10 +1,10 @@
-# requirements.txt - KOMPLEKSOWY - Wszystkie zależności
+# requirements.txt - Complete dependencies for Modbus Monitor
 
 # Core Framework
 Flask==2.3.3
 Werkzeug==2.3.7
 
-# Web & WebSocket (opcjonalne, ale do dashboardu)
+# Web & WebSocket (for dashboard)
 Flask-SocketIO==5.3.4
 python-socketio==5.9.0
 python-engineio==4.7.1
@@ -16,19 +16,19 @@ pymodbus==3.1.0
 SQLAlchemy==2.0.21
 psycopg2-binary==2.9.7  # PostgreSQL support (optional)
 
-# Desktop GUI (opcjonalne, ale do PyQt6)
-PyQt6==6.5.2
-PyQt6-Qt6==6.5.2
-PyQt6-sip==13.5.2
-PyQt6-Charts==6.5.2
+# Desktop GUI (PyQt6) - FIXED: Using compatible versions
+PyQt6==6.6.0
+PyQt6-Qt6==6.6.0
+PyQt6-sip==13.6.0
+PyQt6-Charts>=6.5.0
 
 # Notifications & Email
-plyer==2.1.0  # Desktop notifications
+plyer==2.1.0
 email-validator==2.0.0
 
 # Data Export
-openpyxl==3.1.2  # Excel support
-pandas==2.0.3  # Data manipulation
+openpyxl==3.1.2
+pandas==2.0.3
 
 # Environment & Config
 python-dotenv==1.0.0
@@ -41,16 +41,20 @@ colorlog==6.7.0
 requests==2.31.0
 click==8.1.7
 
-# Build & Distribution (opcjonalne)
+# Build & Distribution
 pyinstaller==6.1.0
 wheel==0.41.2
 setuptools==68.1.2
 
-# Development (opcjonalne)
+# Development
 pytest==7.4.0
+pytest-cov==4.1.0
+pytest-mock==3.11.1
 black==23.7.0
 pylint==2.17.5
 flake8==6.0.0
+mypy==1.5.0
+isort==5.12.0
 
 # Performance & Async
 aiofiles==23.1.0
