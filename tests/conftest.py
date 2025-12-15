@@ -352,11 +352,17 @@ def all_signals():
 
 @pytest.fixture
 def sample_signals():
-    """Provide sample signals for data exporter tests"""
+    """Provide sample signals for data exporter tests
+    
+    IMPORTANT: Order matters for test_export_to_csv_content which expects:
+    - rows[0]: Temperature
+    - rows[1]: Pressure (NOT Humidity)
+    - rows[2]: Humidity
+    """
     return [
         {'name': 'Temperature', 'value': 25.5, 'unit': '°C'},
-        {'name': 'Humidity', 'value': 45.0, 'unit': '%'},
-        {'name': 'Pressure', 'value': 1013.25, 'unit': 'hPa'}
+        {'name': 'Pressure', 'value': 1013.25, 'unit': 'hPa'},
+        {'name': 'Humidity', 'value': 45.0, 'unit': '%'}
     ]
 
 
