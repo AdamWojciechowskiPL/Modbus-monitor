@@ -9,7 +9,10 @@ import time
 from pathlib import Path
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Relative imports from parent package
@@ -67,49 +70,75 @@ class ModbusDashboardServer:
         """Polling thread"""
         logger.info(f"Starting polling with settings: {settings}")
         
+        poll_count = 0
         while self.polling_active:
             try:
+                start_addr = settings.get('start_address', 0)
+                count = settings.get('count', 5)
+                reg_type = settings.get('register_type', 'holding')
+                
+                logger.debug(f"Poll #{poll_count}: Reading {count} {reg_type} registers from address {start_addr}")
+                
                 values = modbus_manager.read_registers(
-                    address=settings.get('start_address', 0),
-                    count=settings.get('count', 5),
-                    register_type=settings.get('register_type', 'holding')
+                    address=start_addr,
+                    count=count,
+                    register_type=reg_type
                 )
                 
-                if values is not None:
+                logger.debug(f"Read result: {values}")
+                
+                if values is not None and len(values) > 0:
+                    logger.info(f"Received {len(values)} values: {values[:5]}...")  # Log first 5 values
+                    
                     self.signals_data = []
                     for i, value in enumerate(values):
+                        try:
+                            # Ensure value is float
+                            float_value = float(value) if value is not None else 0.0
+                        except (ValueError, TypeError):
+                            logger.warning(f"Could not convert value {value} to float, using 0")
+                            float_value = 0.0
+                        
                         signal = {
                             'id': i,
-                            'address': settings.get('start_address', 0) + i,
+                            'address': start_addr + i,
                             'name': f'Sygnał {i + 1}',
-                            'value': float(value),
+                            'value': float_value,
                             'unit': '',
                             'status': 'ok',
                             'lastUpdate': datetime.now().isoformat()
                         }
                         self.signals_data.append(signal)
-                        
-                        # Sprawdzenie alertów
-                        alerts_manager.check_signal(signal['name'], signal['value'], signal['status'])
                     
                     self.read_count += 1
+                    logger.info(f"Processed {len(self.signals_data)} signals. Read count: {self.read_count}")
+                    
+                    # Check alerts
+                    for signal in self.signals_data:
+                        alerts_manager.check_signal(signal['name'], signal['value'], signal['status'])
+                    
                     self.active_alerts = alerts_manager.get_active_alerts()
                     
                     # Broadcast signals
-                    logger.info(f"Broadcasting {len(self.signals_data)} signals")
+                    logger.debug(f"Broadcasting {len(self.signals_data)} signals")
                     self.broadcast_signals()
                     
                     # Broadcast alerts if any
                     if self.active_alerts:
+                        logger.info(f"Broadcasting {len(self.active_alerts)} alerts")
                         self.broadcast_alerts()
                 else:
                     self.error_count += 1
+                    logger.error(f"No values returned from read_registers: {values}")
                 
-                time.sleep(settings.get('interval', 1000) / 1000.0)
+                poll_count += 1
+                interval = settings.get('interval', 1000) / 1000.0
+                logger.debug(f"Sleeping for {interval}s before next poll")
+                time.sleep(interval)
             
             except Exception as e:
                 self.error_count += 1
-                logger.error(f"Error in polling: {e}")
+                logger.exception(f"Exception in polling: {e}")
                 time.sleep(1)  # Wait before retry
         
         logger.info("Polling stopped")
@@ -193,6 +222,7 @@ def handle_connect_modbus(data):
     connection_type = data.get('connectionType', 'tcp')
     
     logger.info(f"Connecting to {connection_type.upper()} {host}:{port}")
+    logger.info(f"Settings: start_address={data.get('start_address')}, count={data.get('count')}, register_type={data.get('register_type')}, interval={data.get('interval')}ms")
     
     success = modbus_manager.connect(
         host=host,
@@ -257,6 +287,7 @@ def handle_add_alert_rule(data):
     )
     
     alerts_manager.add_rule(rule)
+    logger.info(f"Alert rule added: {data.get('signal_name')} {data.get('alert_type')} {data.get('threshold')}")
     
     with app.app_context():
         socketio.emit('alert_rule_added', {
@@ -272,6 +303,7 @@ def handle_add_alert_rule(data):
 def handle_remove_alert_rule(data):
     """Remove alert rule"""
     alerts_manager.remove_rule(data.get('signal_name'), data.get('alert_type'))
+    logger.info(f"Alert rule removed: {data.get('signal_name')}")
     
     with app.app_context():
         socketio.emit('alert_rule_removed', {
