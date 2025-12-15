@@ -90,6 +90,18 @@ class TestData:
     ]
 
 
+class MockModbusResponse:
+    """Mock Modbus response object"""
+    
+    def __init__(self, registers=None, bits=None):
+        self.registers = registers or []
+        self.bits = bits or []
+    
+    def isError(self):
+        """Check if response is error"""
+        return False
+
+
 # ============================================================================
 # Session-scoped fixtures (created once per test session)
 # ============================================================================
@@ -144,15 +156,23 @@ def mock_modbus_client():
     """Create mock Modbus client with standard return values"""
     client = MagicMock()
     
-    # Setup return values for read operations
-    client.read_holding_registers.return_value = TestData.HOLDING_REGISTERS[:3]
-    client.read_input_registers.return_value = TestData.INPUT_REGISTERS[:2]
-    client.read_coils.return_value = TestData.COILS[:3]
-    client.read_discrete_inputs.return_value = TestData.DISCRETE_INPUTS[:2]
+    # Setup return values for read operations - use MockModbusResponse
+    client.read_holding_registers.return_value = MockModbusResponse(
+        registers=TestData.HOLDING_REGISTERS[:3]
+    )
+    client.read_input_registers.return_value = MockModbusResponse(
+        registers=TestData.INPUT_REGISTERS[:2]
+    )
+    client.read_coils.return_value = MockModbusResponse(
+        bits=TestData.COILS[:3]
+    )
+    client.read_discrete_inputs.return_value = MockModbusResponse(
+        bits=TestData.DISCRETE_INPUTS[:2]
+    )
     
     # Setup return values for write operations
-    client.write_register.return_value = True
-    client.write_coil.return_value = True
+    client.write_register.return_value = MockModbusResponse()
+    client.write_coil.return_value = MockModbusResponse()
     
     # Setup connection methods
     client.connect.return_value = True
@@ -167,7 +187,9 @@ def mock_modbus_client_tcp():
     with patch('modbus_monitor.modbus_client.ModbusTcpClient') as mock:
         mock_instance = MagicMock()
         mock_instance.connect.return_value = True
-        mock_instance.read_holding_registers.return_value = TestData.HOLDING_REGISTERS[:3]
+        mock_instance.read_holding_registers.return_value = MockModbusResponse(
+            registers=TestData.HOLDING_REGISTERS[:3]
+        )
         mock.return_value = mock_instance
         yield mock_instance
 
@@ -178,7 +200,9 @@ def mock_modbus_client_serial():
     with patch('modbus_monitor.modbus_client.ModbusSerialClient') as mock:
         mock_instance = MagicMock()
         mock_instance.connect.return_value = True
-        mock_instance.read_holding_registers.return_value = TestData.HOLDING_REGISTERS[:3]
+        mock_instance.read_holding_registers.return_value = MockModbusResponse(
+            registers=TestData.HOLDING_REGISTERS[:3]
+        )
         mock.return_value = mock_instance
         yield mock_instance
 
@@ -326,16 +350,7 @@ def csv_file(temp_dir):
 def json_file(temp_dir):
     """Create sample JSON file"""
     json_path = temp_dir / 'config.json'
-    json_content = '''{
-    "modbus": {
-        "host": "192.168.1.100",
-        "port": 502,
-        "unit_id": 1
-    },
-    "signals": [
-        {"name": "temperature", "address": 0}
-    ]
-}
+    json_content = '''{\n    "modbus": {\n        "host": "192.168.1.100",\n        "port": 502,\n        "unit_id": 1\n    },\n    "signals": [\n        {"name": "temperature", "address": 0}\n    ]\n}
 '''
     json_path.write_text(json_content)
     yield json_path
