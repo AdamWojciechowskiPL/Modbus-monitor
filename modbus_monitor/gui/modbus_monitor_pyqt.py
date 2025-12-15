@@ -166,7 +166,7 @@ class ModbusMonitorApp(QMainWindow):
         layout.addWidget(sep2)
         
         # Sygnały
-        signals_label = QLabel("⚧ Sygnały")
+        signals_label = QLabel("⎇ Sygnały")
         signals_label.setFont(QFont("Inter", 14, QFont.Weight.Bold))
         signals_label.setStyleSheet("color: #8b5cf6;")
         layout.addWidget(signals_label)
@@ -245,7 +245,7 @@ class ModbusMonitorApp(QMainWindow):
         # Odczyty
         reads_layout = QHBoxLayout()
         reads_label = QLabel("Odczytów:")
-        reads_label.setStyleSheet("color: #e2e8f0; font-weight: 500;")
+        reads_label.setStyleSheet("color: #cbd5e1; font-weight: 500;")
         self.read_count_label = QLabel("0")
         self.read_count_label.setStyleSheet("color: #22d3ee; font-weight: bold; font-size: 14px;")
         reads_layout.addWidget(reads_label)
@@ -256,7 +256,7 @@ class ModbusMonitorApp(QMainWindow):
         # Błędy
         errors_layout = QHBoxLayout()
         errors_label = QLabel("Błędów:")
-        errors_label.setStyleSheet("color: #e2e8f0; font-weight: 500;")
+        errors_label.setStyleSheet("color: #cbd5e1; font-weight: 500;")
         self.error_count_label = QLabel("0")
         self.error_count_label.setStyleSheet("color: #fb7185; font-weight: bold; font-size: 14px;")
         errors_layout.addWidget(errors_label)
@@ -269,7 +269,7 @@ class ModbusMonitorApp(QMainWindow):
     def update_connect_button_style(self):
         """Zaktualizuj styl przycisku połączenia"""
         if self.connected:
-            self.connect_btn.setText("⚧ Rozłącz")
+            self.connect_btn.setText("⎇ Rozłącz")
             self.connect_btn.setStyleSheet("""
                 QPushButton {
                     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -313,7 +313,7 @@ class ModbusMonitorApp(QMainWindow):
         """Utwórz nowoczesny nagłówek"""
         layout = QHBoxLayout()
         
-        title = QLabel("📡 Monitorowanie sygnałów")
+        title = QLabel("📼 Monitorowanie sygnałów")
         title.setFont(QFont("Inter", 24, QFont.Weight.Bold))
         title.setStyleSheet("color: #f1f5f9;")
         layout.addWidget(title)
@@ -471,11 +471,12 @@ class ModbusMonitorApp(QMainWindow):
         return layout
     
     def create_label(self, text):
-        """Utwórz sformatowanną etykietę - JASNE KOLORY!"""
+        """Utwórz sformatowaną etykietę - JASNE KOLORY Z WYMAZANĄ WIDOCZNOŚĆ!"""
         label = QLabel(text)
+        # Wyłącz jasnsze kolory - użyj jasny cyan dla lepszej widoczności
         label.setStyleSheet("""
-            color: #f1f5f9;
-            font-weight: 600;
+            color: #22d3ee;
+            font-weight: 700;
             font-size: 12px;
             letter-spacing: 0.3px;
         """)
@@ -604,7 +605,7 @@ class ModbusMonitorApp(QMainWindow):
             self.update_connect_button_style()
             self.status_label.setText("Rozłączony")
             self.status_dot.setStyleSheet("color: #ef4444; font-size: 14px;")
-            self.statusBar.showMessage("⚧ Rozłączono")
+            self.statusBar.showMessage("⎇ Rozłączono")
         
         except Exception as e:
             logger.error(f"Disconnect error: {str(e)}")
