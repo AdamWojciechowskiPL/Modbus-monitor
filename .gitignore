@@ -1,4 +1,8 @@
-# .gitignore - Pliki do ignorowania w Git
+# .gitignore - Global ignore rules for Modbus Monitor project
+
+# NOTE: This file intentionally keeps broad Python, IDE and OS ignores
+#       plus project-specific entries (logs, exports, database, etc.)
+#       It is based on the existing version with minor cleanup.
 
 # ============= PYTHON =============
 
@@ -127,16 +131,12 @@ dmypy.json
 # VS Code
 .vscode/
 *.code-workspace
-.vscode/settings.json
-.vscode/launch.json
-.vscode/extensions.json
 
 # PyCharm
 .idea/
 *.iml
 *.iws
 *.ipr
-*.swp
 
 # Sublime Text
 *.sublime-project
@@ -146,7 +146,6 @@ dmypy.json
 *~
 *.swp
 *.swo
-*~
 
 # Atom
 .atom/
@@ -205,8 +204,6 @@ temp/
 tmp/
 *.tmp
 *.bak
-*.swp
-*.swo
 
 # Build artifacts
 dist/
@@ -220,7 +217,7 @@ build/
 .env.*.local
 config.local.py
 
-# OS specific
+# Old virtualenv
 .venv_old/
 
 # ============= DOCUMENTATION =============
@@ -243,15 +240,5 @@ api_docs/
 *.backup
 *.bak
 
-# Lock files (optional - uncomment if you want to commit lock files)
-# poetry.lock
-# Pipfile.lock
-
-# Mac specific
-.DS_Store
-._*
-.Spotlight-V100
-.Trashes
-
 # Keep .env template
-# !.env.example
+!.env.example
