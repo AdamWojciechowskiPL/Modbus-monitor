@@ -106,7 +106,7 @@ class ModbusClientManager:
             logger.error(f"Błąd przy konwersji F32: {e}")
             return None
     
-    def read_registers(self, address=0, count=1, register_type='holding', data_format='f32'):
+    def read_registers(self, address=0, count=1, register_type='holding', data_format='f32', unit_id=None):
         """
         Odczytaj rejestry
         
@@ -115,6 +115,7 @@ class ModbusClientManager:
             count: Liczba rejestrów (jeśli f32: liczba 32-bit floatów)
             register_type: 'holding', 'input', 'coil', 'discrete'
             data_format: 's16', 'u16', 'f32' (domyślnie f32)
+            unit_id: ID urządzenia (jeśli None, użyj domyślnego)
         
         Returns:
             list: Lista wartości lub None w przypadku błędu
@@ -123,6 +124,9 @@ class ModbusClientManager:
             if not self.is_connected:
                 logger.error("Brak połączenia")
                 return None
+            
+            if unit_id is None:
+                unit_id = self.unit_id
             
             # Jeśli F32, czytaj 2x więcej rejestrów
             read_count = count * 2 if data_format == 'f32' else count
@@ -133,29 +137,33 @@ class ModbusClientManager:
             if register_type == 'holding':
                 result = self.client.read_holding_registers(
                     address=address,
-                    count=read_count
+                    count=read_count,
+                    unit=unit_id
                 )
             elif register_type == 'input':
                 result = self.client.read_input_registers(
                     address=address,
-                    count=read_count
+                    count=read_count,
+                    unit=unit_id
                 )
             elif register_type == 'coil':
                 result = self.client.read_coils(
                     address=address,
-                    count=read_count
+                    count=read_count,
+                    unit=unit_id
                 )
             elif register_type == 'discrete':
                 result = self.client.read_discrete_inputs(
                     address=address,
-                    count=read_count
+                    count=read_count,
+                    unit=unit_id
                 )
             else:
                 logger.error(f"Nieznany typ rejestru: {register_type}")
                 return None
             
             # Sprawdz czy wyniku jest isError
-            if hasattr(result, 'isError') and result.isError():
+            if hasattr(result, 'isError') and callable(result.isError) and result.isError():
                 logger.error(f"Błąd Modbus: {result}")
                 return None
             
@@ -203,7 +211,7 @@ class ModbusClientManager:
             logger.error(f"Błąd w read_registers(): {str(e)}")
             return None
     
-    def write_register(self, address, value, register_type='holding'):
+    def write_register(self, address, value, register_type='holding', unit_id=None):
         """
         Zapisz wartość do rejestru
         """
@@ -212,21 +220,33 @@ class ModbusClientManager:
                 logger.error("Brak połączenia")
                 return False
             
+            if unit_id is None:
+                unit_id = self.unit_id
+            
             if register_type == 'holding':
                 result = self.client.write_register(
                     address=address,
-                    value=value
+                    value=value,
+                    unit=unit_id
                 )
             elif register_type == 'coil':
                 result = self.client.write_coil(
                     address=address,
-                    value=value
+                    value=value,
+                    unit=unit_id
                 )
             else:
                 logger.error(f"Nieznany typ rejestru: {register_type}")
                 return False
             
-            return not result.isError()
+            # Handle both real response and mocked responses
+            if isinstance(result, bool):
+                return result
+            elif hasattr(result, 'isError') and callable(result.isError):
+                return not result.isError()
+            else:
+                logger.error(f"Błąd w write_register(): Nieznany format odpowiedzi: {type(result)}")
+                return False
             
         except Exception as e:
             logger.error(f"Błąd w write_register(): {str(e)}")

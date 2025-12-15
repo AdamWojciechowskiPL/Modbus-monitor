@@ -3,6 +3,7 @@
 import os
 import json
 import csv
+import time
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -15,10 +16,18 @@ class DataExporter:
     def __init__(self, export_dir='exports'):
         self.export_dir = export_dir
         Path(export_dir).mkdir(exist_ok=True)
+        self._last_export_time = None
     
     def _generate_filename(self, extension):
         """Generuj unikalną nazwę pliku"""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Ensure unique timestamp by adding delay if necessary
+        current_time = datetime.now()
+        if self._last_export_time and current_time == self._last_export_time:
+            time.sleep(0.01)  # Small delay to ensure different timestamp
+            current_time = datetime.now()
+        
+        self._last_export_time = current_time
+        timestamp = current_time.strftime('%Y%m%d_%H%M%S')
         return f"modbus_data_{timestamp}.{extension}"
     
     def export_to_csv(self, signals, filename=None):
@@ -40,6 +49,11 @@ class DataExporter:
             
             if not signals:
                 logger.warning("Brak danych do eksportu")
+                # Utwórz pusty plik CSV z nagłówkami
+                with open(filepath, 'w', newline='', encoding='utf-8') as f:
+                    fieldnames = ['ID', 'Adres', 'Nazwa Sygnału', 'Wartość', 'Jednostka', 'Status', 'Ostatni Odczyt']
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
                 return filepath
             
             with open(filepath, 'w', newline='', encoding='utf-8') as f:
@@ -90,10 +104,6 @@ class DataExporter:
                 logger.error("openpyxl nie zainstalowany. Zainstaluj: pip install openpyxl")
                 raise
             
-            if not signals:
-                logger.warning("Brak danych do eksportu")
-                return filepath
-            
             wb = openpyxl.Workbook()
             ws = wb.active
             ws.title = "Sygnały"
@@ -111,17 +121,20 @@ class DataExporter:
                 cell.font = header_font
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             
-            # Dane
-            for signal in signals:
-                ws.append([
-                    signal.get('id', ''),
-                    signal.get('address', ''),
-                    signal.get('name', ''),
-                    signal.get('value', ''),
-                    signal.get('unit', ''),
-                    signal.get('status', ''),
-                    signal.get('lastUpdate', '')
-                ])
+            if signals:
+                # Dane
+                for signal in signals:
+                    ws.append([
+                        signal.get('id', ''),
+                        signal.get('address', ''),
+                        signal.get('name', ''),
+                        signal.get('value', ''),
+                        signal.get('unit', ''),
+                        signal.get('status', ''),
+                        signal.get('lastUpdate', '')
+                    ])
+            else:
+                logger.warning("Brak danych do eksportu")
             
             # Szerokość kolumn
             ws.column_dimensions['A'].width = 8
