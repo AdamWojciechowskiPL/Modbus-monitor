@@ -1,0 +1,47 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Checks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --quiet -r requirements.txt
+          pip install --quiet black pylint flake8 mypy isort
+
+      - name: Check code formatting with black
+        run: black --check --line-length=100 modbus_monitor tests *.py || true
+        continue-on-error: true
+
+      - name: Check imports with isort
+        run: isort --check-only --profile black modbus_monitor tests *.py || true
+        continue-on-error: true
+
+      - name: Lint with pylint
+        run: pylint modbus_monitor --disable=all --enable=E,F --exit-zero || true
+        continue-on-error: true
+
+      - name: Lint with flake8
+        run: flake8 modbus_monitor tests --max-line-length=100 --statistics || true
+        continue-on-error: true
+
+      - name: Type check with mypy
+        run: mypy modbus_monitor --ignore-missing-imports 2>&1 | head -20 || true
+        continue-on-error: true
