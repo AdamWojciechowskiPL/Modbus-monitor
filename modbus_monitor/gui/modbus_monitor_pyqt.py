@@ -343,13 +343,18 @@ class ModbusMonitorApp(QMainWindow):
             QHeaderView::section {
                 background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
                 color: white;
-                padding: 10px;
+                padding: 12px 8px;
                 border: none;
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 13px;
+                letter-spacing: 0.5px;
             }
             QTableWidget::item {
-                padding: 10px;
+                padding: 12px 8px;
+                border-bottom: 1px solid rgba(100, 200, 220, 0.08);
+            }
+            QTableWidget::item:selected {
+                background-color: rgba(100, 200, 220, 0.15);
             }
         """)
         
@@ -357,8 +362,8 @@ class ModbusMonitorApp(QMainWindow):
         header = table.horizontalHeader()
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         
-        # Wysokość rzędów
-        table.verticalHeader().setDefaultSectionSize(35)
+        # Wysokość rzędów - POWIĘKSZONA
+        table.verticalHeader().setDefaultSectionSize(40)
         table.setAlternatingRowColors(True)
         
         return table
@@ -661,27 +666,31 @@ class ModbusMonitorApp(QMainWindow):
                 # ID
                 id_item = QTableWidgetItem(str(signal['id'] + 1))
                 id_item.setForeground(QColor("#06b6d4"))
+                id_item.setFont(QFont("Inter", 11))
                 self.signals_table.setItem(row, 0, id_item)
                 
                 # Adres
                 addr_item = QTableWidgetItem(str(signal['address']))
                 addr_item.setForeground(QColor("#94a3b8"))
+                addr_item.setFont(QFont("Inter", 11))
                 self.signals_table.setItem(row, 1, addr_item)
                 
-                # Nazwa
+                # Nazwa - BRIGHT CYAN + BOLD + LARGER FONT
                 name_item = QTableWidgetItem(signal['name'])
-                name_item.setForeground(QColor("#cbd5e1"))
+                name_item.setForeground(QColor("#22d3ee"))  # Bright cyan
+                name_item.setFont(QFont("Inter", 12, QFont.Weight.Bold))  # Bold and larger
                 self.signals_table.setItem(row, 2, name_item)
                 
                 # Wartość
                 value_item = QTableWidgetItem(str(signal['value']))
                 value_item.setForeground(QColor("#10b981"))
-                value_item.setFont(QFont("Courier", 11, QFont.Weight.Bold))
+                value_item.setFont(QFont("Courier", 12, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 3, value_item)
                 
                 # Jednostka
                 unit_item = QTableWidgetItem(signal['unit'])
                 unit_item.setForeground(QColor("#8b5cf6"))
+                unit_item.setFont(QFont("Inter", 11))
                 self.signals_table.setItem(row, 4, unit_item)
                 
                 # Status
@@ -690,12 +699,13 @@ class ModbusMonitorApp(QMainWindow):
                     status_item.setForeground(QColor("#22c55e"))
                 else:
                     status_item.setForeground(QColor("#ef4444"))
-                status_item.setFont(QFont("Inter", 10, QFont.Weight.Bold))
+                status_item.setFont(QFont("Inter", 11, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 5, status_item)
                 
                 # Ostatni Odczyt
                 time_item = QTableWidgetItem(signal['lastUpdate'])
                 time_item.setForeground(QColor("#64748b"))
+                time_item.setFont(QFont("Inter", 10))
                 self.signals_table.setItem(row, 6, time_item)
         
         except Exception as e:
