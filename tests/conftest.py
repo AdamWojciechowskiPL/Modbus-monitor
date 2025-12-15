@@ -13,6 +13,7 @@ from unittest.mock import Mock, MagicMock, patch
 from pathlib import Path
 import tempfile
 import shutil
+import struct
 
 
 class TestData:
@@ -58,7 +59,7 @@ class TestData:
         }
     }
     
-    # Sample register values
+    # Sample register values (S16)
     HOLDING_REGISTERS = [42, 100, 25, 78, 15]
     INPUT_REGISTERS = [50, 110, 88, 92, 5]
     COILS = [1, 0, 1, 0, 1]
@@ -88,6 +89,22 @@ class TestData:
             'enabled': True
         }
     ]
+    
+    @staticmethod
+    def f32_to_u16_pair(f32_value):
+        """Convert F32 float to pair of U16 registers (big-endian).
+        
+        Example: 42.0 -> (16563, 0) for IEEE 754 representation
+        """
+        try:
+            # Pack as float, unpack as unsigned int
+            u32 = struct.unpack('>I', struct.pack('>f', f32_value))[0]
+            # Split into high and low U16 values
+            high = (u32 >> 16) & 0xFFFF
+            low = u32 & 0xFFFF
+            return high, low
+        except Exception:
+            return 0, 0
 
 
 class MockModbusResponse:
@@ -153,16 +170,54 @@ def temp_file(temp_dir):
 
 @pytest.fixture
 def mock_modbus_client():
-    """Create mock Modbus client with standard return values"""
+    """Create mock Modbus client with standard return values.
+    
+    IMPORTANT: For F32 format, read_holding_registers should return U16 pairs
+    that will be converted to F32 by the client code.
+    For S16/U16 format, return raw values directly.
+    """
     client = MagicMock()
     
-    # Setup return values for read operations - use MockModbusResponse
-    client.read_holding_registers.return_value = MockModbusResponse(
-        registers=TestData.HOLDING_REGISTERS[:3]
-    )
-    client.read_input_registers.return_value = MockModbusResponse(
-        registers=TestData.INPUT_REGISTERS[:2]
-    )
+    # For F32 format tests: convert expected F32 values to U16 pairs
+    # Expected: read_holding_registers(count=6) -> 3 F32 values [42, 100, 25]
+    holding_f32_pairs = []
+    for f32_val in [42.0, 100.0, 25.0]:
+        high, low = TestData.f32_to_u16_pair(f32_val)
+        holding_f32_pairs.extend([high, low])
+    
+    # For S16/U16 format tests: use raw values
+    holding_raw = TestData.HOLDING_REGISTERS[:3]
+    
+    # For input registers F32: convert expected values [50, 110] to U16 pairs
+    input_f32_pairs = []
+    for f32_val in [50.0, 110.0]:
+        high, low = TestData.f32_to_u16_pair(f32_val)
+        input_f32_pairs.extend([high, low])
+    
+    input_raw = TestData.INPUT_REGISTERS[:2]
+    
+    # Setup return values for read operations
+    # When count=6, it's requesting 3 F32 values, so return 6 U16 registers (pairs)
+    # When count=3, it's requesting 3 S16 values, so return 3 registers
+    def read_holding_side_effect(*args, **kwargs):
+        count = kwargs.get('count', 3)
+        # If count is even (likely F32 pairs), return F32 pairs
+        # If count is 3 (S16), return raw values
+        if count == 6:  # 3 F32 values need 6 U16 registers
+            return MockModbusResponse(registers=holding_f32_pairs)
+        else:
+            return MockModbusResponse(registers=holding_raw)
+    
+    def read_input_side_effect(*args, **kwargs):
+        count = kwargs.get('count', 2)
+        if count == 4:  # 2 F32 values need 4 U16 registers
+            return MockModbusResponse(registers=input_f32_pairs)
+        else:
+            return MockModbusResponse(registers=input_raw)
+    
+    client.read_holding_registers.side_effect = read_holding_side_effect
+    client.read_input_registers.side_effect = read_input_side_effect
+    
     client.read_coils.return_value = MockModbusResponse(
         bits=TestData.COILS[:3]
     )
@@ -187,8 +242,15 @@ def mock_modbus_client_tcp():
     with patch('modbus_monitor.modbus_client.ModbusTcpClient') as mock:
         mock_instance = MagicMock()
         mock_instance.connect.return_value = True
+        
+        # Convert expected F32 values to U16 pairs
+        holding_f32_pairs = []
+        for f32_val in [42.0, 100.0, 25.0]:
+            high, low = TestData.f32_to_u16_pair(f32_val)
+            holding_f32_pairs.extend([high, low])
+        
         mock_instance.read_holding_registers.return_value = MockModbusResponse(
-            registers=TestData.HOLDING_REGISTERS[:3]
+            registers=holding_f32_pairs
         )
         mock.return_value = mock_instance
         yield mock_instance
@@ -200,8 +262,15 @@ def mock_modbus_client_serial():
     with patch('modbus_monitor.modbus_client.ModbusSerialClient') as mock:
         mock_instance = MagicMock()
         mock_instance.connect.return_value = True
+        
+        # Convert expected F32 values to U16 pairs
+        holding_f32_pairs = []
+        for f32_val in [42.0, 100.0, 25.0]:
+            high, low = TestData.f32_to_u16_pair(f32_val)
+            holding_f32_pairs.extend([high, low])
+        
         mock_instance.read_holding_registers.return_value = MockModbusResponse(
-            registers=TestData.HOLDING_REGISTERS[:3]
+            registers=holding_f32_pairs
         )
         mock.return_value = mock_instance
         yield mock_instance
@@ -393,7 +462,16 @@ def csv_file(temp_dir):
 def json_file(temp_dir):
     """Create sample JSON file"""
     json_path = temp_dir / 'config.json'
-    json_content = '''{\n    "modbus": {\n        "host": "192.168.1.100",\n        "port": 502,\n        "unit_id": 1\n    },\n    "signals": [\n        {"name": "temperature", "address": 0}\n    ]\n}
+    json_content = '''{
+    "modbus": {
+        "host": "192.168.1.100",
+        "port": 502,
+        "unit_id": 1
+    },
+    "signals": [
+        {"name": "temperature", "address": 0}
+    ]
+}
 '''
     json_path.write_text(json_content)
     yield json_path
