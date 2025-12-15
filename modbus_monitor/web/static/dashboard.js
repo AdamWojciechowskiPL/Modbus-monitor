@@ -15,7 +15,7 @@ socket.on('connect', () => {
 });
 
 socket.on('disconnect', () => {
-    console.log('✗ Rozłączono z serwerem');
+    console.log('✗ Rozłączono z serwera');
     updateConnectionStatus('disconnected');
 });
 
@@ -83,6 +83,10 @@ function connectModbus() {
     const host = document.getElementById('inputHost').value;
     const port = document.getElementById('inputPort').value;
     const connectionType = document.getElementById('selectConnectionType').value;
+    const startAddress = parseInt(document.getElementById('inputStartAddress').value) || 0;
+    const registerType = document.getElementById('selectRegisterType').value;
+    const count = parseInt(document.getElementById('inputCount').value) || 5;
+    const interval = parseInt(document.getElementById('inputInterval').value) || 1000;
     
     if (!host) {
         showNotification('warning', 'Wpisz host/IP');
@@ -93,10 +97,10 @@ function connectModbus() {
         host: host,
         port: parseInt(port),
         connectionType: connectionType,
-        start_address: 0,
-        count: 5,
-        register_type: 'holding',
-        interval: 1000
+        start_address: startAddress,
+        count: count,
+        register_type: registerType,
+        interval: interval
     });
 }
 
