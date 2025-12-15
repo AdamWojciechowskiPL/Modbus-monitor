@@ -37,20 +37,25 @@ jobs:
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
 
-      - name: Install dependencies
+      - name: Upgrade pip, setuptools, wheel
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Install all dependencies
-          pip install --quiet -r requirements.txt
-          pip install --quiet pytest pytest-cov pytest-mock
-        continue-on-error: true
 
-      - name: Install dependencies (fallback - skip PyQt6-Charts if needed)
-        if: failure()
+      - name: Install test dependencies first
         run: |
-          echo "Retrying without PyQt6-Charts..."
-          grep -v 'PyQt6-Charts' requirements.txt | pip install --quiet -r /dev/stdin || true
           pip install --quiet pytest pytest-cov pytest-mock
+
+      - name: Install project dependencies
+        run: |
+          pip install --quiet -r requirements.txt || (
+            echo "Failed with all requirements, trying without PyQt6-Charts..."
+            grep -v 'PyQt6-Charts' requirements.txt > requirements-slim.txt
+            pip install --quiet -r requirements-slim.txt || echo "Installation partially failed, continuing..."
+          )
+
+      - name: Verify pytest is installed
+        run: |
+          python -c "import pytest; print(f'pytest {pytest.__version__} installed')"
 
       - name: Lint with flake8
         continue-on-error: true
