@@ -91,29 +91,30 @@ class ModbusClientManager:
                 logger.error("Brak połączenia")
                 return None
             
+            # Nowa API pymodbus 3.11+ - bez parametru 'unit'
             if register_type == 'holding':
                 result = self.client.read_holding_registers(
                     address=address,
                     count=count,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             elif register_type == 'input':
                 result = self.client.read_input_registers(
                     address=address,
                     count=count,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             elif register_type == 'coil':
                 result = self.client.read_coils(
                     address=address,
                     count=count,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             elif register_type == 'discrete':
                 result = self.client.read_discrete_inputs(
                     address=address,
                     count=count,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             else:
                 logger.error(f"Nieznany typ rejestru: {register_type}")
@@ -155,13 +156,13 @@ class ModbusClientManager:
                 result = self.client.write_register(
                     address=address,
                     value=value,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             elif register_type == 'coil':
                 result = self.client.write_coil(
                     address=address,
                     value=value,
-                    unit=self.unit_id
+                    slave=self.unit_id
                 )
             else:
                 logger.error(f"Nieznany typ rejestru: {register_type}")
