@@ -7,6 +7,10 @@ import json
 import threading
 import time
 from pathlib import Path
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Relative imports from parent package
 from ..modbus_client import ModbusClientManager
@@ -25,25 +29,45 @@ database = ModbusDatabase(db_type='sqlite')
 alerts_manager = AlertsManager(database=database)
 
 # State
-polling_active = False
 poll_thread = None
 connected_clients = 0
 
 class ModbusDashboardServer:
     """WebSocket server dla dashboard"""
     
-    def __init__(self):
+    def __init__(self, app, socketio):
+        self.app = app
+        self.socketio = socketio
         self.signals_data = []
         self.active_alerts = []
         self.connection_status = 'disconnected'
         self.read_count = 0
         self.error_count = 0
+        self.polling_active = False
+    
+    def broadcast_signals(self):
+        """Send signals to all connected clients"""
+        with self.app.app_context():
+            self.socketio.emit('signals_update', {
+                'signals': self.signals_data,
+                'readCount': self.read_count,
+                'errorCount': self.error_count,
+                'timestamp': datetime.now().isoformat()
+            }, to=None)  # Broadcast to all
+    
+    def broadcast_alerts(self):
+        """Send alerts to all connected clients"""
+        if self.active_alerts:
+            with self.app.app_context():
+                self.socketio.emit('alerts_update', {
+                    'alerts': self.active_alerts
+                }, to=None)  # Broadcast to all
     
     def poll_signals(self, settings):
         """Polling thread"""
-        global polling_active
+        logger.info(f"Starting polling with settings: {settings}")
         
-        while polling_active:
+        while self.polling_active:
             try:
                 values = modbus_manager.read_registers(
                     address=settings.get('start_address', 0),
@@ -58,7 +82,7 @@ class ModbusDashboardServer:
                             'id': i,
                             'address': settings.get('start_address', 0) + i,
                             'name': f'Sygnał {i + 1}',
-                            'value': value,
+                            'value': float(value),
                             'unit': '',
                             'status': 'ok',
                             'lastUpdate': datetime.now().isoformat()
@@ -66,32 +90,31 @@ class ModbusDashboardServer:
                         self.signals_data.append(signal)
                         
                         # Sprawdzenie alertów
-                        alerts_manager.check_signal(signal['name'], value, signal['status'])
+                        alerts_manager.check_signal(signal['name'], signal['value'], signal['status'])
                     
                     self.read_count += 1
                     self.active_alerts = alerts_manager.get_active_alerts()
                     
-                    # Broadcast do wszystkich klientów
-                    socketio.emit('signals_update', {
-                        'signals': self.signals_data,
-                        'readCount': self.read_count,
-                        'errorCount': self.error_count,
-                        'timestamp': datetime.now().isoformat()
-                    }, to='*')  # Use to='*' instead of broadcast=True
+                    # Broadcast signals
+                    logger.info(f"Broadcasting {len(self.signals_data)} signals")
+                    self.broadcast_signals()
                     
-                    # Jeśli są alerty, wyślij je
+                    # Broadcast alerts if any
                     if self.active_alerts:
-                        socketio.emit('alerts_update', {
-                            'alerts': self.active_alerts
-                        }, to='*')  # Use to='*' instead of broadcast=True
+                        self.broadcast_alerts()
+                else:
+                    self.error_count += 1
                 
                 time.sleep(settings.get('interval', 1000) / 1000.0)
             
             except Exception as e:
                 self.error_count += 1
-                print(f"Error in polling: {e}")
+                logger.error(f"Error in polling: {e}")
+                time.sleep(1)  # Wait before retry
+        
+        logger.info("Polling stopped")
 
-dashboard_server = ModbusDashboardServer()
+dashboard_server = ModbusDashboardServer(app, socketio)
 
 # ============= ROUTES =============
 
@@ -134,13 +157,20 @@ def handle_connect():
     connected_clients += 1
     dashboard_server.connection_status = 'connected'
     
+    logger.info(f"✓ Client connected. Total: {connected_clients}")
+    
     emit('connection_response', {
         'status': 'connected',
         'clients': connected_clients,
         'timestamp': datetime.now().isoformat()
     })
     
-    print(f"✓ Client connected. Total: {connected_clients}")
+    # Send current status to new client
+    emit('signals_update', {
+        'signals': dashboard_server.signals_data,
+        'readCount': dashboard_server.read_count,
+        'errorCount': dashboard_server.error_count
+    })
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -151,16 +181,18 @@ def handle_disconnect():
     if connected_clients == 0:
         dashboard_server.connection_status = 'disconnected'
     
-    print(f"✗ Client disconnected. Total: {connected_clients}")
+    logger.info(f"✗ Client disconnected. Total: {connected_clients}")
 
 @socketio.on('connect_modbus')
 def handle_connect_modbus(data):
     """Connect to Modbus device"""
-    global polling_active, poll_thread
+    global poll_thread
     
     host = data.get('host', '192.168.1.100')
     port = data.get('port', 502)
     connection_type = data.get('connectionType', 'tcp')
+    
+    logger.info(f"Connecting to {connection_type.upper()} {host}:{port}")
     
     success = modbus_manager.connect(
         host=host,
@@ -172,7 +204,7 @@ def handle_connect_modbus(data):
     
     if success:
         dashboard_server.connection_status = 'connected'
-        polling_active = True
+        dashboard_server.polling_active = True
         
         # Start polling thread
         poll_thread = threading.Thread(
@@ -182,12 +214,16 @@ def handle_connect_modbus(data):
         )
         poll_thread.start()
         
-        emit('modbus_connected', {
-            'status': 'ok',
-            'message': f'Połączono z {host}:{port}',
-            'timestamp': datetime.now().isoformat()
-        }, to='*')  # Use to='*' instead of broadcast=True
+        with app.app_context():
+            socketio.emit('modbus_connected', {
+                'status': 'ok',
+                'message': f'Połączono z {host}:{port}',
+                'timestamp': datetime.now().isoformat()
+            }, to=None)  # Broadcast to all
+        
+        logger.info(f"✓ Modbus connected successfully")
     else:
+        logger.error("Failed to connect to Modbus")
         emit('modbus_error', {
             'status': 'error',
             'message': 'Nie udało się połączyć'
@@ -196,17 +232,18 @@ def handle_connect_modbus(data):
 @socketio.on('disconnect_modbus')
 def handle_disconnect_modbus():
     """Disconnect from Modbus"""
-    global polling_active
-    
-    polling_active = False
+    dashboard_server.polling_active = False
     modbus_manager.disconnect()
     dashboard_server.connection_status = 'disconnected'
     
-    emit('modbus_disconnected', {
-        'status': 'ok',
-        'message': 'Rozłączono',
-        'timestamp': datetime.now().isoformat()
-    }, to='*')  # Use to='*' instead of broadcast=True
+    logger.info("Modbus disconnected")
+    
+    with app.app_context():
+        socketio.emit('modbus_disconnected', {
+            'status': 'ok',
+            'message': 'Rozłączono',
+            'timestamp': datetime.now().isoformat()
+        }, to=None)  # Broadcast to all
 
 @socketio.on('add_alert_rule')
 def handle_add_alert_rule(data):
@@ -221,24 +258,26 @@ def handle_add_alert_rule(data):
     
     alerts_manager.add_rule(rule)
     
-    emit('alert_rule_added', {
-        'rule': {
-            'signal': data.get('signal_name'),
-            'type': data.get('alert_type'),
-            'threshold': data.get('threshold'),
-            'severity': data.get('severity')
-        }
-    }, to='*')  # Use to='*' instead of broadcast=True
+    with app.app_context():
+        socketio.emit('alert_rule_added', {
+            'rule': {
+                'signal': data.get('signal_name'),
+                'type': data.get('alert_type'),
+                'threshold': data.get('threshold'),
+                'severity': data.get('severity')
+            }
+        }, to=None)  # Broadcast to all
 
 @socketio.on('remove_alert_rule')
 def handle_remove_alert_rule(data):
     """Remove alert rule"""
     alerts_manager.remove_rule(data.get('signal_name'), data.get('alert_type'))
     
-    emit('alert_rule_removed', {
-        'signal': data.get('signal_name'),
-        'type': data.get('alert_type')
-    }, to='*')  # Use to='*' instead of broadcast=True
+    with app.app_context():
+        socketio.emit('alert_rule_removed', {
+            'signal': data.get('signal_name'),
+            'type': data.get('alert_type')
+        }, to=None)  # Broadcast to all
 
 @socketio.on('request_signals_update')
 def handle_request_signals_update():
