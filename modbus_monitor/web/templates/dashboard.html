@@ -1,17 +1,12 @@
-# templates/dashboard.html - Nowoczesny Dashboard WebSocket
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modbus Monitor - Dashboard</title>
+    <title>Modbus Monitor - Professional Dashboard</title>
     
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -19,102 +14,117 @@
     <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     
+    <!-- Feather Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    
     <style>
-        :root {
-            --primary: #208080;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #22c55e;
-            --info: #3b82f6;
-            --dark: #1f2937;
-            --light: #f3f4f6;
-        }
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #06b6d4;
+            --accent-alt: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --glass: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(100, 200, 220, 0.2);
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
             min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
+            position: relative;
+            overflow-x: hidden;
         }
         
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: var(--glass);
             backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 1rem 0;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         
-        .navbar-brand {
-            font-weight: 700;
+        /* Header */
+        .header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.8));
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             font-size: 1.5rem;
-            color: var(--primary) !important;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
-        .container-main {
-            padding: 2rem 0;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            background: white;
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), #26a0a0);
-            color: white;
-            border: none;
-            font-weight: 600;
-            padding: 1.25rem;
-        }
-        
-        .card-body {
-            padding: 1.5rem;
-        }
-        
-        .status-badge {
-            display: inline-flex;
+        .status-indicator {
+            display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .status-connected {
-            background: rgba(34, 197, 94, 0.2);
-            color: var(--success);
-        }
-        
-        .status-disconnected {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 0.875rem;
+            font-weight: 500;
         }
         
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-dot.connected {
             background: var(--success);
+            animation: pulse 2s infinite;
         }
         
         .status-dot.disconnected {
@@ -122,190 +132,234 @@
         }
         
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2); }
         }
         
-        .signal-card {
-            border-left: 4px solid var(--primary);
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-            background: linear-gradient(135deg, rgba(32, 128, 128, 0.05), transparent);
-            transition: all 0.3s;
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
         }
         
-        .signal-card:hover {
-            border-left-color: var(--info);
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), transparent);
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
         
-        .signal-name {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
+        .grid.wide {
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
         }
         
-        .signal-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0.5rem 0;
-        }
-        
-        .signal-address {
-            font-size: 0.85rem;
-            color: #999;
-        }
-        
-        .alert-item {
-            border-left: 4px solid var(--danger);
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 6px;
-            background: rgba(239, 68, 68, 0.05);
-        }
-        
-        .alert-item.warning {
-            border-left-color: var(--warning);
-            background: rgba(245, 158, 11, 0.05);
-        }
-        
-        .alert-item.info {
-            border-left-color: var(--info);
-            background: rgba(59, 130, 246, 0.05);
-        }
-        
-        .alert-severity {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .alert-severity.critical {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-        }
-        
-        .alert-severity.warning {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning);
-        }
-        
-        .alert-severity.info {
-            background: rgba(59, 130, 246, 0.2);
-            color: var(--info);
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-bottom: 1rem;
-        }
-        
-        .stat-box {
-            background: linear-gradient(135deg, var(--primary), #26a0a0);
-            color: white;
+        /* Card */
+        .card {
             padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(6, 182, 212, 0.2);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        /* Stats Grid */
+        .stat-box {
+            text-align: center;
         }
         
         .stat-value {
             font-size: 2.5rem;
             font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
             margin: 0.5rem 0;
         }
         
         .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
         }
         
-        .btn-custom {
-            border-radius: 8px;
-            padding: 0.625rem 1.25rem;
-            font-weight: 600;
+        /* Input Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
             transition: all 0.3s;
         }
         
-        .btn-primary {
-            background: var(--primary);
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.875rem 1.75rem;
             border: none;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #1a6666;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(32, 128, 128, 0.3);
-        }
-        
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            padding: 0.625rem 1rem;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.2rem rgba(32, 128, 128, 0.25);
-        }
-        
-        .tab-content {
-            background: white;
-            border-radius: 0 0 12px 12px;
-            padding: 1.5rem;
-        }
-        
-        .nav-tabs {
-            border-bottom: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
             gap: 0.5rem;
         }
         
-        .nav-link {
-            color: #666;
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .nav-link:hover {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-        
-        .nav-link.active {
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
             color: white;
-            background: var(--primary);
-            border-bottom-color: var(--primary);
+            width: 100%;
+            justify-content: center;
         }
         
-        .table {
-            border-radius: 8px;
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.6);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: var(--accent);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Signal Cards */
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .signal-item {
+            padding: 1.5rem;
+            position: relative;
             overflow: hidden;
         }
         
-        .table thead {
-            background: linear-gradient(135deg, var(--primary), #26a0a0);
-            color: white;
+        .signal-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         
-        .table tbody tr:hover {
-            background: rgba(32, 128, 128, 0.05);
+        .signal-item:hover::before {
+            opacity: 1;
         }
         
-        .spinner-grow {
-            color: var(--primary);
+        .signal-name {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .signal-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0.75rem 0;
+        }
+        
+        .signal-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .badge-success {
-            background: rgba(34, 197, 94, 0.2);
+            background: rgba(16, 185, 129, 0.2);
             color: var(--success);
         }
         
@@ -314,224 +368,339 @@
             color: var(--danger);
         }
         
-        .settings-divider {
-            border-top: 2px solid #e5e7eb;
-            margin: 1rem 0;
-            padding-top: 1rem;
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0;
         }
         
+        .tab-button {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+        
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tab-button.active {
+            color: var(--accent);
+        }
+        
+        .tab-button.active::after {
+            opacity: 1;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        /* Alerts */
+        .alert-item {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--danger);
+            border-radius: 8px;
+        }
+        
+        .alert-item.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: var(--warning);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .card {
+            animation: slideIn 0.4s ease-out;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            .container-main {
-                padding: 1rem 0;
+            .container {
+                padding: 1rem;
             }
             
-            .signal-value {
-                font-size: 1.5rem;
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1.5rem 1rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
             }
             
             .stat-value {
-                font-size: 1.8rem;
+                font-size: 1.75rem;
+            }
+            
+            .signal-value {
+                font-size: 1.75rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar sticky-top">
-        <div class="container-fluid">
-            <span class="navbar-brand">
-                <i class="fas fa-server"></i> Modbus Monitor Dashboard
-            </span>
-            <span class="status-badge" id="connectionStatus">
-                <span class="status-dot disconnected"></span>
-                <span>Brak połączenia</span>
-            </span>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M2 12h20"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            Modbus Monitor
         </div>
-    </nav>
+        <div class="status-indicator">
+            <div class="status-dot disconnected" id="statusDot"></div>
+            <span id="statusText">Brak połączenia</span>
+        </div>
+    </div>
     
     <!-- Main Container -->
-    <div class="container-lg container-main">
-        
-        <!-- Connection Card -->
-        <div class="row mb-4">
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-plug"></i> Połączenie Modbus
+    <div class="container">
+        <!-- Connection Panel -->
+        <div class="grid wide">
+            <div class="card glass">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v6M12 16v6M4.22 4.22L9.46 9.46M14.54 14.54L19.78 19.78M4.22 19.78L9.46 14.54M14.54 9.46L19.78 4.22"></path>
+                        </svg>
+                        Połączenie
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Host/IP</label>
-                            <input type="text" class="form-control" id="inputHost" value="192.168.1.100" placeholder="192.168.1.100">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Port</label>
-                            <input type="number" class="form-control" id="inputPort" value="502" min="1" max="65535">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Typ Połączenia</label>
-                            <select class="form-select" id="selectConnectionType">
-                                <option value="tcp">Modbus TCP</option>
-                                <option value="rtu">Modbus RTU Serial</option>
-                            </select>
-                        </div>
-                        
-                        <div class="settings-divider">
-                            <label class="form-label fw-bold">Konfiguracja Sygnałów</label>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Adres Startowy</label>
-                            <input type="number" class="form-control" id="inputStartAddress" value="0" min="0" max="65535">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Typ Rejestru</label>
-                            <select class="form-select" id="selectRegisterType">
-                                <option value="holding">Holding Registers</option>
-                                <option value="input">Input Registers</option>
-                                <option value="coil">Coils</option>
-                                <option value="discrete">Discrete Inputs</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Liczba Sygnałów</label>
-                            <input type="number" class="form-control" id="inputCount" value="5" min="1" max="100">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Interwał (ms)</label>
-                            <input type="number" class="form-control" id="inputInterval" value="1000" min="100" step="100">
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary btn-custom" id="btnConnect" onclick="connectModbus()">
-                                <i class="fas fa-link"></i> Połącz
-                            </button>
-                            <button class="btn btn-outline-danger btn-custom" id="btnDisconnect" onclick="disconnectModbus()" style="display:none;">
-                                <i class="fas fa-unlink"></i> Rozłącz
-                            </button>
-                        </div>
-                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Host/IP</label>
+                    <input type="text" class="form-input" id="inputHost" value="192.168.122.38" placeholder="192.168.1.100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Port</label>
+                    <input type="number" class="form-input" id="inputPort" value="5014" min="1" max="65535">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Typ Połączenia</label>
+                    <select class="form-select" id="selectConnectionType">
+                        <option value="tcp">Modbus TCP</option>
+                        <option value="serial">Modbus Serial</option>
+                    </select>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid var(--glass-border); margin: 1.5rem 0;">
+                
+                <div class="form-group">
+                    <label class="form-label">Adres Startowy</label>
+                    <input type="number" class="form-input" id="inputStartAddress" value="0" min="0" max="65535">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Typ Rejestru</label>
+                    <select class="form-select" id="selectRegisterType">
+                        <option value="holding">Holding Registers</option>
+                        <option value="input">Input Registers</option>
+                        <option value="coil">Coils</option>
+                        <option value="discrete">Discrete Inputs</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Liczba Sygnałów</label>
+                    <input type="number" class="form-input" id="inputCount" value="125" min="1" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Interwał (ms)</label>
+                    <input type="number" class="form-input" id="inputInterval" value="1000" min="100" step="100">
+                </div>
+                
+                <button class="btn btn-primary" id="btnConnect" onclick="connectModbus()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v6M12 16v6M4.22 4.22L9.46 9.46M14.54 14.54L19.78 19.78"></path>
+                    </svg>
+                    Połącz
+                </button>
+                <button class="btn btn-secondary" id="btnDisconnect" onclick="disconnectModbus()" style="display: none; margin-top: 0.5rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v6M12 16v6"></path>
+                    </svg>
+                    Rozłącz
+                </button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="card glass">
+                <div class="stat-box">
+                    <div class="stat-label">Liczba Odczytów</div>
+                    <div class="stat-value" id="readCount">0</div>
                 </div>
             </div>
             
-            <!-- Stats Card -->
-            <div class="col-lg-8">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="stat-box">
-                            <div class="stat-label">Liczba Odczytów</div>
-                            <div class="stat-value" id="readCount">0</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="stat-box">
-                            <div class="stat-label">Liczba Błędów</div>
-                            <div class="stat-value" id="errorCount" style="color: #fecaca;">0</div>
-                        </div>
-                    </div>
+            <div class="card glass">
+                <div class="stat-box">
+                    <div class="stat-label">Błędy</div>
+                    <div class="stat-value" id="errorCount" style="color: var(--danger);">0</div>
                 </div>
             </div>
         </div>
         
-        <!-- Main Tabs -->
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="signalsTab" data-bs-toggle="tab" href="#signals" role="tab">
-                            <i class="fas fa-signal"></i> Sygnały
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="alertsTab" data-bs-toggle="tab" href="#alerts" role="tab">
-                            <i class="fas fa-bell"></i> Alerty <span class="badge bg-danger ms-2" id="alertCount" style="display:none;">0</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="chartsTab" data-bs-toggle="tab" href="#charts" role="tab">
-                            <i class="fas fa-chart-line"></i> Wykresy
-                        </a>
-                    </li>
-                </ul>
+        <!-- Tabs -->
+        <div class="card glass">
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('signals')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 0.5rem;" >
+                        <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
+                    </svg>
+                    Sygnały
+                </button>
+                <button class="tab-button" onclick="switchTab('alerts')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 0.5rem;">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    Alerty
+                </button>
+                <button class="tab-button" onclick="switchTab('charts')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; margin-right: 0.5rem;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                    </svg>
+                    Wykresy
+                </button>
             </div>
             
-            <div class="tab-content">
-                
-                <!-- Tab 1: Sygnały -->
-                <div class="tab-pane fade show active" id="signals" role="tabpanel">
-                    <div id="signalsList">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> Połącz się z urządzeniem Modbus aby zobaczyć sygnały
-                        </div>
+            <!-- Tab: Signals -->
+            <div class="tab-content active" id="tab-signals">
+                <div id="signalsList" class="signals-grid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📡</div>
+                        <p>Połącz się z urządzeniem Modbus aby zobaczyć sygnały</p>
                     </div>
                 </div>
-                
-                <!-- Tab 2: Alerty -->
-                <div class="tab-pane fade" id="alerts" role="tabpanel">
-                    <div class="row mb-4">
-                        <div class="col-lg-6">
-                            <h5>Dodaj Nową Regułę</h5>
-                            <div class="mb-3">
-                                <label class="form-label">Sygnał</label>
-                                <input type="text" class="form-control" id="alertSignalName" placeholder="Nazwa sygnału">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Typ Alertu</label>
-                                <select class="form-select" id="alertType">
-                                    <option value="threshold_high">Próg Maksymalny</option>
-                                    <option value="threshold_low">Próg Minimalny</option>
-                                    <option value="connection_lost">Utrata Połączenia</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Próg Wartości</label>
-                                <input type="number" class="form-control" id="alertThreshold" placeholder="0" step="0.1">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Ważność</label>
-                                <select class="form-select" id="alertSeverity">
-                                    <option value="info">Info</option>
-                                    <option value="warning">Ostrzeżenie</option>
-                                    <option value="critical">Krytyczne</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-primary btn-custom w-100" onclick="addAlertRule()">
-                                <i class="fas fa-plus"></i> Dodaj Regułę
-                            </button>
-                        </div>
-                        <div class="col-lg-6">
-                            <h5>Aktywne Alerty</h5>
-                            <div id="alertsList">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle"></i> Brak aktywnych alertów
-                                </div>
-                            </div>
-                        </div>
+            </div>
+            
+            <!-- Tab: Alerts -->
+            <div class="tab-content" id="tab-alerts">
+                <div id="alertsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✔️</div>
+                        <p>Brak aktywnych alertów</p>
                     </div>
                 </div>
-                
-                <!-- Tab 3: Wykresy -->
-                <div class="tab-pane fade" id="charts" role="tabpanel">
-                    <h5 class="mb-4">Wykresy Real-Time</h5>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="chart-container">
-                                <canvas id="chartSignals"></canvas>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="chart-container">
-                                <canvas id="chartAlerts"></canvas>
-                            </div>
-                        </div>
+            </div>
+            
+            <!-- Tab: Charts -->
+            <div class="tab-content" id="tab-charts">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <div class="chart-container" style="background: rgba(30, 41, 59, 0.4); padding: 1rem; border-radius: 10px;">
+                        <canvas id="chartSignals"></canvas>
+                    </div>
+                    <div class="chart-container" style="background: rgba(30, 41, 59, 0.4); padding: 1rem; border-radius: 10px;">
+                        <canvas id="chartAlerts"></canvas>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/dashboard.js"></script>
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // Mark button as active
+            event.target.closest('.tab-button').classList.add('active');
+        }
+        
+        // Update status indicator
+        function updateStatusIndicator(status) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            if (status === 'connected') {
+                dot.classList.remove('disconnected');
+                text.textContent = 'Połączono';
+            } else {
+                dot.classList.add('disconnected');
+                text.textContent = 'Brak połączenia';
+            }
+        }
+        
+        // Override from dashboard.js
+        const originalUpdateStatus = window.updateConnectionStatus;
+        window.updateConnectionStatus = function(status) {
+            originalUpdateStatus(status);
+            updateStatusIndicator(status);
+        };
+    </script>
 </body>
 </html>
