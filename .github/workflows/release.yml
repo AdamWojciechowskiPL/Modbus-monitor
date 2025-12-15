@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Create Release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: tag_name
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Create changelog entry
+        id: changelog
+        run: |
+          VERSION=${{ steps.tag_name.outputs.VERSION }}
+          echo "Creating release notes for ${VERSION}..."
+          if [ -f "CHANGELOG.md" ]; then
+            HEAD=$(head -n 10 CHANGELOG.md)
+            echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+            echo "${HEAD}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "NOTES=Release ${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag_name.outputs.VERSION }}
+          name: Release ${{ steps.tag_name.outputs.VERSION }}
+          body: ${{ steps.changelog.outputs.NOTES }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI (if configured)
+        run: |
+          echo "PyPI publishing can be configured here"
+          echo "Add pypa/gh-action-pypi-publish for automatic PyPI releases"
+        continue-on-error: true
