@@ -77,13 +77,13 @@ class ModbusDashboardServer:
                         'readCount': self.read_count,
                         'errorCount': self.error_count,
                         'timestamp': datetime.now().isoformat()
-                    }, broadcast=True)
+                    }, to='*')  # Use to='*' instead of broadcast=True
                     
                     # Jeśli są alerty, wyślij je
                     if self.active_alerts:
                         socketio.emit('alerts_update', {
                             'alerts': self.active_alerts
-                        }, broadcast=True)
+                        }, to='*')  # Use to='*' instead of broadcast=True
                 
                 time.sleep(settings.get('interval', 1000) / 1000.0)
             
@@ -186,7 +186,7 @@ def handle_connect_modbus(data):
             'status': 'ok',
             'message': f'Połączono z {host}:{port}',
             'timestamp': datetime.now().isoformat()
-        }, broadcast=True)
+        }, to='*')  # Use to='*' instead of broadcast=True
     else:
         emit('modbus_error', {
             'status': 'error',
@@ -206,7 +206,7 @@ def handle_disconnect_modbus():
         'status': 'ok',
         'message': 'Rozłączono',
         'timestamp': datetime.now().isoformat()
-    }, broadcast=True)
+    }, to='*')  # Use to='*' instead of broadcast=True
 
 @socketio.on('add_alert_rule')
 def handle_add_alert_rule(data):
@@ -228,7 +228,7 @@ def handle_add_alert_rule(data):
             'threshold': data.get('threshold'),
             'severity': data.get('severity')
         }
-    }, broadcast=True)
+    }, to='*')  # Use to='*' instead of broadcast=True
 
 @socketio.on('remove_alert_rule')
 def handle_remove_alert_rule(data):
@@ -238,7 +238,7 @@ def handle_remove_alert_rule(data):
     emit('alert_rule_removed', {
         'signal': data.get('signal_name'),
         'type': data.get('alert_type')
-    }, broadcast=True)
+    }, to='*')  # Use to='*' instead of broadcast=True
 
 @socketio.on('request_signals_update')
 def handle_request_signals_update():
