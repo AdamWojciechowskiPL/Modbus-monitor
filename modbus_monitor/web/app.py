@@ -5,11 +5,16 @@ from datetime import datetime
 import json
 import threading
 import time
-from modbus_client import ModbusClientManager
-from data_exporter import DataExporter
 import os
+from pathlib import Path
 
-app = Flask(__name__)
+# Relative imports from parent package
+from ..modbus_client import ModbusClientManager
+from ..data_exporter import DataExporter
+
+app = Flask(__name__, 
+            template_folder=str(Path(__file__).parent / 'templates'),
+            static_folder=str(Path(__file__).parent / 'static'))
 app.config['JSON_SORT_KEYS'] = False
 
 # Globalna instancja managera Modbus
