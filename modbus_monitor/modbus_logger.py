@@ -18,7 +18,7 @@ class ModbusLogger:
             log_level: Poziom logowania (DEBUG, INFO, WARNING, ERROR)
         """
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(exist_ok=True)
+        self.log_dir.mkdir(exist_ok=True, parents=True)
         
         # Główny logger
         self.logger = logging.getLogger('modbus_monitor')
@@ -113,7 +113,7 @@ def setup_logger(name='modbus_monitor', log_dir='logs', log_level=logging.INFO):
     
     # Utwórz folder jeśli nie istnieje
     log_path = Path(log_dir)
-    log_path.mkdir(exist_ok=True)
+    log_path.mkdir(exist_ok=True, parents=True)
     
     # File handler
     log_file = log_path / f"{name}_{datetime.now().strftime('%Y%m%d')}.log"
