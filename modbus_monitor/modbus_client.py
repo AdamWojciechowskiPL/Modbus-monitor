@@ -79,46 +79,42 @@ class ModbusClientManager:
     def u16_to_s16(value):
         """
         Konwertuj U16 (unsigned 16-bit) do S16 (signed 16-bit)
-        
-        Args:
-            value: U16 value (0-65535)
-        
-        Returns:
-            S16 value (-32768 to 32767)
         """
         if value > 32767:
             return value - 65536
         return value
     
     @staticmethod
-    def u16_to_f32(high, low):
+    def u16_pair_to_f32(high, low):
         """
         Konwertuj dwa U16 rejestry do F32 (IEEE 754 32-bit float)
+        Big-endian format: [high_word, low_word]
         
         Args:
-            high: Rejestr wysokiej części (adres n)
-            low: Rejestr niskiej części (adres n+1)
+            high: Rejestr wysokiej części (adres n) - starsze bity
+            low: Rejestr niskiej części (adres n+1) - młodsze bity
         
         Returns:
-            Float value
+            Float value lub None jeśli błąd
         """
         try:
-            # Połącz dwa U16 w jedno U32
-            u32 = (high << 16) | low
-            # Konwertuj U32 do float
+            # Połącz dwa U16 w jedno U32 (big-endian)
+            u32 = ((high & 0xFFFF) << 16) | (low & 0xFFFF)
+            # Konwertuj U32 do float (IEEE 754)
             return struct.unpack('>f', struct.pack('>I', u32))[0]
-        except:
+        except Exception as e:
+            logger.error(f"Błąd przy konwersji F32: {e}")
             return None
     
-    def read_registers(self, address=0, count=1, register_type='holding', data_format='s16'):
+    def read_registers(self, address=0, count=1, register_type='holding', data_format='f32'):
         """
         Odczytaj rejestry
         
         Args:
             address: Adres startowy
-            count: Liczba rejestrów
+            count: Liczba rejestrów (jeśli f32: liczba 32-bit floatów)
             register_type: 'holding', 'input', 'coil', 'discrete'
-            data_format: Format danych: 's16', 'u16', 'f32', 'f64'
+            data_format: 's16', 'u16', 'f32' (domyślnie f32)
         
         Returns:
             list: Lista wartości lub None w przypadku błędu
@@ -128,26 +124,31 @@ class ModbusClientManager:
                 logger.error("Brak połączenia")
                 return None
             
+            # Jeśli F32, czytaj 2x więcej rejestrów
+            read_count = count * 2 if data_format == 'f32' else count
+            
+            logger.debug(f"Reading {read_count} registers (format: {data_format})")
+            
             # pymodbus 3.11+ API
             if register_type == 'holding':
                 result = self.client.read_holding_registers(
                     address=address,
-                    count=count
+                    count=read_count
                 )
             elif register_type == 'input':
                 result = self.client.read_input_registers(
                     address=address,
-                    count=count
+                    count=read_count
                 )
             elif register_type == 'coil':
                 result = self.client.read_coils(
                     address=address,
-                    count=count
+                    count=read_count
                 )
             elif register_type == 'discrete':
                 result = self.client.read_discrete_inputs(
                     address=address,
-                    count=count
+                    count=read_count
                 )
             else:
                 logger.error(f"Nieznany typ rejestru: {register_type}")
@@ -160,28 +161,37 @@ class ModbusClientManager:
             
             if hasattr(result, 'registers'):
                 raw_values = result.registers
+                logger.debug(f"Raw registers: {raw_values[:10]}...")
                 
                 # Konwertuj wartości na odpowiedni format
-                if data_format == 's16':
-                    # Konwertuj U16 do S16 (signed 16-bit)
-                    converted = [self.u16_to_s16(v) for v in raw_values]
-                    logger.debug(f"Converted to S16: {converted[:10]}...")
+                if data_format == 'f32':
+                    # Konwertuj pary U16 do F32 (IEEE 754)
+                    converted = []
+                    for i in range(0, len(raw_values), 2):
+                        if i + 1 < len(raw_values):
+                            high = raw_values[i]
+                            low = raw_values[i + 1]
+                            f32_val = self.u16_pair_to_f32(high, low)
+                            if f32_val is not None:
+                                converted.append(round(f32_val, 4))
+                                logger.debug(f"F32: {high:05d},{low:05d} -> {f32_val}")
+                    logger.info(f"Converted to F32: {converted[:5]}...")
                     return converted
+                
+                elif data_format == 's16':
+                    # Konwertuj U16 do S16
+                    converted = [self.u16_to_s16(v) for v in raw_values]
+                    return converted
+                
                 elif data_format == 'u16':
                     return raw_values
-                elif data_format == 'f32':
-                    # Konwertuj pary U16 do F32
-                    if len(raw_values) % 2 != 0:
-                        logger.warning("Count musi być parzysty dla F32")
-                    converted = []
-                    for i in range(0, len(raw_values) - 1, 2):
-                        f32_val = self.u16_to_f32(raw_values[i], raw_values[i + 1])
-                        converted.append(f32_val)
-                    return converted
+                
                 else:
                     return raw_values
+            
             elif hasattr(result, 'bits'):
                 return result.bits
+            
             else:
                 logger.error(f"Brak danych w odpowiedzi: {result}")
                 return None
@@ -196,14 +206,6 @@ class ModbusClientManager:
     def write_register(self, address, value, register_type='holding'):
         """
         Zapisz wartość do rejestru
-        
-        Args:
-            address: Adres rejestru
-            value: Wartość do zapisania
-            register_type: 'holding' lub 'coil'
-        
-        Returns:
-            bool: True jeśli zapis udany
         """
         try:
             if not self.is_connected:
