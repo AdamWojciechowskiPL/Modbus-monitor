@@ -219,6 +219,7 @@ def mock_database():
     db.close.return_value = True
     db.execute.return_value = True
     db.query.return_value = []
+    db.save_alert.return_value = True
     return db
 
 
@@ -285,6 +286,26 @@ def alert_rule():
 def alert_rules():
     """Create multiple alert rules"""
     return TestData.ALERT_RULES
+
+
+@pytest.fixture
+def sample_alert_data():
+    """Provide sample alert data"""
+    return {
+        'signal_name': 'Temperature',
+        'alert_type': 'threshold_high',
+        'value': 65.0,
+        'threshold': 50.0,
+        'severity': 'critical',
+        'message': 'Temperature exceeded threshold',
+        'timestamp': '2024-01-01T00:00:00Z'
+    }
+
+
+@pytest.fixture
+def mock_notification_callback():
+    """Create mock notification callback"""
+    return MagicMock()
 
 
 # ============================================================================
