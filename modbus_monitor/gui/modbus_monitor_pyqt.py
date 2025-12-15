@@ -54,6 +54,7 @@ class ModbusWorker(QObject):
         self.running = True
         self.settings = settings
         self.connection_status.emit('connected')
+        logger.info("Polling started")
         
         while self.running:
             try:
@@ -302,10 +303,9 @@ class ModbusMonitorApp(QMainWindow):
             }
             QPushButton:hover {
                 background: linear-gradient(135deg, #2dd478 0%, #1ca850 100%);
-                box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
             }
             QPushButton:pressed {
-                transform: scale(0.98);
+                background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
             }
         """)
         layout.addWidget(self.connect_btn)
@@ -421,10 +421,9 @@ class ModbusMonitorApp(QMainWindow):
             }
             QPushButton:hover {
                 background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
-                box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
             }
             QPushButton:pressed {
-                transform: scale(0.98);
+                background: linear-gradient(135deg, #0d4f5d 0%, #0a3f4d 100%);
             }
         """
         
@@ -458,6 +457,9 @@ class ModbusMonitorApp(QMainWindow):
             QPushButton:hover {
                 background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
             }
+            QPushButton:pressed {
+                background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+            }
         """)
         layout.addWidget(clear_btn)
         
@@ -488,7 +490,6 @@ class ModbusMonitorApp(QMainWindow):
             QLineEdit:focus {
                 border: 2px solid #06b6d4;
                 background-color: rgba(30, 41, 59, 0.95);
-                box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
             }
         """
     
@@ -586,7 +587,9 @@ class ModbusMonitorApp(QMainWindow):
                     }
                     QPushButton:hover {
                         background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-                        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+                    }
+                    QPushButton:pressed {
+                        background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
                     }
                 """)
                 self.status_label.setText("Połączony")
@@ -599,6 +602,7 @@ class ModbusMonitorApp(QMainWindow):
                 QMessageBox.critical(self, "Błąd", "Nie udało się połączyć")
         
         except Exception as e:
+            logger.error(f"Connect error: {str(e)}")
             QMessageBox.critical(self, "Błąd", f"Błąd połączenia: {str(e)}")
     
     def disconnect_modbus(self):
@@ -625,7 +629,9 @@ class ModbusMonitorApp(QMainWindow):
                 }
                 QPushButton:hover {
                     background: linear-gradient(135deg, #2dd478 0%, #1ca850 100%);
-                    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+                }
+                QPushButton:pressed {
+                    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
                 }
             """)
             self.status_label.setText("Rozłączony")
@@ -633,42 +639,48 @@ class ModbusMonitorApp(QMainWindow):
             self.statusBar.showMessage("⚧ Rozłączono")
         
         except Exception as e:
+            logger.error(f"Disconnect error: {str(e)}")
             QMessageBox.critical(self, "Błąd", f"Błąd rozłączenia: {str(e)}")
     
     def start_polling(self):
         """Rozpocznij polling sygnałów"""
-        self.worker_thread = QThread()
-        self.worker = ModbusWorker(self.modbus_manager)
-        self.worker.moveToThread(self.worker_thread)
+        try:
+            self.worker_thread = QThread()
+            self.worker = ModbusWorker(self.modbus_manager)
+            self.worker.moveToThread(self.worker_thread)
+            
+            settings = {
+                'start_address': self.start_address_input.value(),
+                'count': self.signal_count_input.value(),
+                'register_type': self.register_type.currentText().lower(),
+                'data_format': self.data_format.currentText().lower(),
+                'interval': self.interval_input.value()
+            }
+            
+            logger.info(f"Starting polling with settings: {settings}")
+            
+            self.worker_thread.started.connect(lambda: self.worker.start_polling(settings))
+            self.worker.signals_read.connect(self.update_signals_table)
+            self.worker.error_occurred.connect(self.handle_error)
+            
+            self.worker_thread.start()
+            logger.info("Worker thread started")
         
-        settings = {
-            'start_address': self.start_address_input.value(),
-            'count': self.signal_count_input.value(),
-            'register_type': self.register_type.currentText().lower(),
-            'data_format': self.data_format.currentText().lower(),
-            'interval': self.interval_input.value()
-        }
-        
-        self.worker_thread.started.connect(lambda: self.worker.start_polling(settings))
-        self.worker.signals_read.connect(self.update_signals_table)
-        self.worker.error_occurred.connect(self.handle_error)
-        
-        self.worker_thread.start()
+        except Exception as e:
+            logger.error(f"Error starting polling: {str(e)}")
     
     def update_signals_table(self, signals):
-        """Zaktualizuj tabelę sygnałów - FIXED!"""
+        """Zaktualizuj tabelę sygnałów"""
         try:
+            logger.debug(f"update_signals_table called with {len(signals)} signals")
             self.signals_data = signals
             self.read_count += 1
             self.read_count_label.setText(str(self.read_count))
             
-            # Czyść tabelę
-            self.signals_table.setRowCount(0)
+            # Czyść tabelę i dodaj sygnały
+            self.signals_table.setRowCount(len(signals))
             
-            # Dodaj wszystkie sygnały
             for row, signal in enumerate(signals):
-                self.signals_table.insertRow(row)
-                
                 # ID
                 id_item = QTableWidgetItem(str(signal['id'] + 1))
                 id_item.setForeground(QColor("#06b6d4"))
@@ -687,7 +699,7 @@ class ModbusMonitorApp(QMainWindow):
                 # Wartość
                 value_item = QTableWidgetItem(str(signal['value']))
                 value_item.setForeground(QColor("#10b981"))
-                value_item.setFont(QFont("Space Mono", 11, QFont.Weight.Bold))
+                value_item.setFont(QFont("Courier", 11, QFont.Weight.Bold))
                 self.signals_table.setItem(row, 3, value_item)
                 
                 # Jednostka
@@ -709,16 +721,16 @@ class ModbusMonitorApp(QMainWindow):
                 time_item.setForeground(QColor("#64748b"))
                 self.signals_table.setItem(row, 6, time_item)
             
-            logger.debug(f"Updated table with {len(signals)} signals")
+            logger.debug(f"Updated table successfully with {len(signals)} rows")
         
         except Exception as e:
-            logger.error(f"Błąd w update_signals_table: {str(e)}")
+            logger.error(f"Error in update_signals_table: {str(e)}")
     
     def handle_error(self, error_msg):
         """Obsłuż błąd"""
         self.error_count += 1
         self.error_count_label.setText(str(self.error_count))
-        logger.error(f"Błąd: {error_msg}")
+        logger.error(f"Worker error: {error_msg}")
     
     def export_csv(self):
         """Eksportuj do CSV"""
