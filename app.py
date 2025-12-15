@@ -23,28 +23,28 @@ load_dotenv()
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Import from web module
-from modbus_monitor.web.app import create_app
+# Import Flask app directly from web module
+from modbus_monitor.web.app import app
 
 if __name__ == "__main__":
-    # Create Flask app
-    app = create_app()
-    
     # Get configuration from environment
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", 5000))
     debug = os.getenv("FLASK_ENV", "development") == "development"
     
-    print("\n" + "="*60)
+    # Ensure exports directory exists
+    os.makedirs('exports', exist_ok=True)
+    
+    print("\n" + "="*70)
     print("🔷 Modbus Monitor - Flask Web Application")
-    print("="*60)
+    print("="*70)
     print(f"🌐 Server: http://localhost:{port}")
-    print(f"📊 Dashboard: http://localhost:{port}/dashboard")
+    print(f"📊 Dashboard: http://localhost:{port}/")
     print(f"🔌 API: http://localhost:{port}/api/*")
     print(f"🐛 Debug Mode: {debug}")
     print("\n💡 For real-time WebSocket dashboard, use: python dashboard_app.py")
     print("💻 For desktop GUI, use: python modbus_monitor_pyqt.py")
-    print("="*60 + "\n")
+    print("="*70 + "\n")
     
     # Run Flask app
     try:
