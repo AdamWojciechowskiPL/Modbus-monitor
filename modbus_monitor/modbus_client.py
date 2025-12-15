@@ -3,6 +3,7 @@
 from pymodbus.client import ModbusTcpClient, ModbusSerialClient
 from pymodbus.exceptions import ModbusException
 import logging
+import struct
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,7 +75,42 @@ class ModbusClientManager:
             self.is_connected = False
             logger.info("Rozłączono")
     
-    def read_registers(self, address=0, count=1, register_type='holding'):
+    @staticmethod
+    def u16_to_s16(value):
+        """
+        Konwertuj U16 (unsigned 16-bit) do S16 (signed 16-bit)
+        
+        Args:
+            value: U16 value (0-65535)
+        
+        Returns:
+            S16 value (-32768 to 32767)
+        """
+        if value > 32767:
+            return value - 65536
+        return value
+    
+    @staticmethod
+    def u16_to_f32(high, low):
+        """
+        Konwertuj dwa U16 rejestry do F32 (IEEE 754 32-bit float)
+        
+        Args:
+            high: Rejestr wysokiej części (adres n)
+            low: Rejestr niskiej części (adres n+1)
+        
+        Returns:
+            Float value
+        """
+        try:
+            # Połącz dwa U16 w jedno U32
+            u32 = (high << 16) | low
+            # Konwertuj U32 do float
+            return struct.unpack('>f', struct.pack('>I', u32))[0]
+        except:
+            return None
+    
+    def read_registers(self, address=0, count=1, register_type='holding', data_format='s16'):
         """
         Odczytaj rejestry
         
@@ -82,6 +118,7 @@ class ModbusClientManager:
             address: Adres startowy
             count: Liczba rejestrów
             register_type: 'holding', 'input', 'coil', 'discrete'
+            data_format: Format danych: 's16', 'u16', 'f32', 'f64'
         
         Returns:
             list: Lista wartości lub None w przypadku błędu
@@ -122,7 +159,27 @@ class ModbusClientManager:
                 return None
             
             if hasattr(result, 'registers'):
-                return result.registers
+                raw_values = result.registers
+                
+                # Konwertuj wartości na odpowiedni format
+                if data_format == 's16':
+                    # Konwertuj U16 do S16 (signed 16-bit)
+                    converted = [self.u16_to_s16(v) for v in raw_values]
+                    logger.debug(f"Converted to S16: {converted[:10]}...")
+                    return converted
+                elif data_format == 'u16':
+                    return raw_values
+                elif data_format == 'f32':
+                    # Konwertuj pary U16 do F32
+                    if len(raw_values) % 2 != 0:
+                        logger.warning("Count musi być parzysty dla F32")
+                    converted = []
+                    for i in range(0, len(raw_values) - 1, 2):
+                        f32_val = self.u16_to_f32(raw_values[i], raw_values[i + 1])
+                        converted.append(f32_val)
+                    return converted
+                else:
+                    return raw_values
             elif hasattr(result, 'bits'):
                 return result.bits
             else:
