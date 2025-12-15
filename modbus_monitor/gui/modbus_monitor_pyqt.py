@@ -3,30 +3,22 @@
 import sys
 import json
 from datetime import datetime
-from threading import Thread
 import logging
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QLineEdit, QSpinBox,
     QLabel, QComboBox, QGroupBox, QFormLayout, QMessageBox, QFileDialog,
-    QStatusBar, QHeaderView, QTabWidget, QProgressBar, QStyle, QScrollArea
+    QStatusBar, QHeaderView
 )
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject, QPointF, QSize
-from PyQt6.QtGui import QIcon, QColor, QFont, QPixmap, QPalette, QBrush, QLinearGradient
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PyQt6.QtGui import QColor, QFont
 
 # Try to import QtChart - if fails, disable chart features
-CHARTS_AVAILABLE = False
 try:
     from PyQt6.QtChart import QChart, QChartView, QLineSeries
-    CHARTS_AVAILABLE = True
 except ImportError:
-    class QChart:
-        pass
-    class QChartView:
-        pass
-    class QLineSeries:
-        pass
+    pass
 
 # Relative imports from parent package
 from ..modbus_client import ModbusClientManager
@@ -35,68 +27,6 @@ from ..data_exporter import DataExporter
 # Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-class ModbusWorker(QObject):
-    """Worker thread do odczytywania sygnałów bezpośrednio z Modbus"""
-    
-    signals_read = pyqtSignal(list)  # Emituje sygnały po odczytaniu
-    error_occurred = pyqtSignal(str)  # Emituje błędy
-    connection_status = pyqtSignal(str)  # 'connected', 'disconnected', 'error'
-    
-    def __init__(self, modbus_manager):
-        super().__init__()
-        self.modbus_manager = modbus_manager
-        self.running = False
-        self.settings = {}
-    
-    def start_polling(self, settings):
-        """Rozpocznij polling sygnałów bezpośrednio z Modbus"""
-        self.running = True
-        self.settings = settings
-        self.connection_status.emit('connected')
-        logger.info("Polling started")
-        
-        while self.running:
-            try:
-                values = self.modbus_manager.read_registers(
-                    address=settings['start_address'],
-                    count=settings['count'],
-                    register_type=settings['register_type'],
-                    data_format=settings.get('data_format', 'f32')
-                )
-                
-                if values is not None:
-                    signals = []
-                    for i, value in enumerate(values):
-                        # Filtruj -9999 (błędne wartości)
-                        is_error = value == -9999.0 or (isinstance(value, (int, float)) and abs(value) > 999999)
-                        
-                        signals.append({
-                            'id': i,
-                            'address': settings['start_address'] + (i * 2 if settings.get('data_format') == 'f32' else i),
-                            'name': f"Sygnał {i + 1}",
-                            'value': f"{value:.2f}" if isinstance(value, float) else str(value),
-                            'unit': 'MW' if settings.get('data_format') == 'f32' else '',
-                            'status': 'error' if is_error else 'ok',
-                            'lastUpdate': datetime.now().strftime('%H:%M:%S')
-                        })
-                    
-                    logger.debug(f"Emitting {len(signals)} signals")
-                    self.signals_read.emit(signals)
-                else:
-                    self.error_occurred.emit("Błąd odczytu sygnałów")
-                
-                QThread.msleep(settings.get('interval', 1000))
-            
-            except Exception as e:
-                self.error_occurred.emit(str(e))
-                logger.error(f"Błąd w polling: {str(e)}")
-    
-    def stop_polling(self):
-        """Zatrzymaj polling"""
-        self.running = False
-        self.connection_status.emit('disconnected')
-
 
 class ModbusMonitorApp(QMainWindow):
     """Główna aplikacja PyQt6 z nowoczesnym designem"""
@@ -115,8 +45,10 @@ class ModbusMonitorApp(QMainWindow):
         self.read_count = 0
         self.error_count = 0
         
-        self.worker_thread = None
-        self.worker = None
+        # Polling timer
+        self.poll_timer = QTimer()
+        self.poll_timer.timeout.connect(self.poll_signals)
+        self.poll_interval = 1000
         
         self.init_ui()
         self.setup_modern_styles()
@@ -596,8 +528,10 @@ class ModbusMonitorApp(QMainWindow):
                 self.status_dot.setStyleSheet("color: #22c55e; font-size: 14px;")
                 self.statusBar.showMessage(f"✓ Połączono z {host}:{port}")
                 
-                # Uruchom worker thread
-                self.start_polling()
+                # Uruchom timer
+                self.poll_interval = self.interval_input.value()
+                self.poll_timer.start(self.poll_interval)
+                logger.info(f"Polling started with interval {self.poll_interval}ms")
             else:
                 QMessageBox.critical(self, "Błąd", "Nie udało się połączyć")
         
@@ -608,13 +542,7 @@ class ModbusMonitorApp(QMainWindow):
     def disconnect_modbus(self):
         """Rozłącz z urządzeniem Modbus"""
         try:
-            if self.worker:
-                self.worker.stop_polling()
-            
-            if self.worker_thread:
-                self.worker_thread.quit()
-                self.worker_thread.wait()
-            
+            self.poll_timer.stop()
             self.modbus_manager.disconnect()
             self.connected = False
             self.connect_btn.setText("⚡ Połącz")
@@ -642,37 +570,45 @@ class ModbusMonitorApp(QMainWindow):
             logger.error(f"Disconnect error: {str(e)}")
             QMessageBox.critical(self, "Błąd", f"Błąd rozłączenia: {str(e)}")
     
-    def start_polling(self):
-        """Rozpocznij polling sygnałów"""
+    def poll_signals(self):
+        """Odczytaj sygnały (wywoływane przez timer)"""
         try:
-            self.worker_thread = QThread()
-            self.worker = ModbusWorker(self.modbus_manager)
-            self.worker.moveToThread(self.worker_thread)
+            values = self.modbus_manager.read_registers(
+                address=self.start_address_input.value(),
+                count=self.signal_count_input.value(),
+                register_type=self.register_type.currentText().lower(),
+                data_format=self.data_format.currentText().lower()
+            )
             
-            settings = {
-                'start_address': self.start_address_input.value(),
-                'count': self.signal_count_input.value(),
-                'register_type': self.register_type.currentText().lower(),
-                'data_format': self.data_format.currentText().lower(),
-                'interval': self.interval_input.value()
-            }
-            
-            logger.info(f"Starting polling with settings: {settings}")
-            
-            self.worker_thread.started.connect(lambda: self.worker.start_polling(settings))
-            self.worker.signals_read.connect(self.update_signals_table)
-            self.worker.error_occurred.connect(self.handle_error)
-            
-            self.worker_thread.start()
-            logger.info("Worker thread started")
+            if values is not None:
+                signals = []
+                for i, value in enumerate(values):
+                    # Filtruj -9999 (błędne wartości)
+                    is_error = value == -9999.0 or (isinstance(value, (int, float)) and abs(value) > 999999)
+                    
+                    signals.append({
+                        'id': i,
+                        'address': self.start_address_input.value() + (i * 2 if self.data_format.currentText() == 'f32' else i),
+                        'name': f"Sygnał {i + 1}",
+                        'value': f"{value:.2f}" if isinstance(value, float) else str(value),
+                        'unit': 'MW' if self.data_format.currentText() == 'f32' else '',
+                        'status': 'error' if is_error else 'ok',
+                        'lastUpdate': datetime.now().strftime('%H:%M:%S')
+                    })
+                
+                self.update_signals_table(signals)
+            else:
+                self.error_count += 1
+                self.error_count_label.setText(str(self.error_count))
         
         except Exception as e:
-            logger.error(f"Error starting polling: {str(e)}")
+            logger.error(f"Poll error: {str(e)}")
+            self.error_count += 1
+            self.error_count_label.setText(str(self.error_count))
     
     def update_signals_table(self, signals):
         """Zaktualizuj tabelę sygnałów"""
         try:
-            logger.debug(f"update_signals_table called with {len(signals)} signals")
             self.signals_data = signals
             self.read_count += 1
             self.read_count_label.setText(str(self.read_count))
@@ -720,17 +656,9 @@ class ModbusMonitorApp(QMainWindow):
                 time_item = QTableWidgetItem(signal['lastUpdate'])
                 time_item.setForeground(QColor("#64748b"))
                 self.signals_table.setItem(row, 6, time_item)
-            
-            logger.debug(f"Updated table successfully with {len(signals)} rows")
         
         except Exception as e:
             logger.error(f"Error in update_signals_table: {str(e)}")
-    
-    def handle_error(self, error_msg):
-        """Obsłuż błąd"""
-        self.error_count += 1
-        self.error_count_label.setText(str(self.error_count))
-        logger.error(f"Worker error: {error_msg}")
     
     def export_csv(self):
         """Eksportuj do CSV"""
@@ -775,6 +703,7 @@ class ModbusMonitorApp(QMainWindow):
     
     def closeEvent(self, event):
         """Obsłuż zamykanie aplikacji"""
+        self.poll_timer.stop()
         if self.connected:
             self.disconnect_modbus()
         event.accept()
