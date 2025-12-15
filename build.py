@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 build.py - Unified Cross-Platform Build Script
 
@@ -18,6 +19,13 @@ import shutil
 import platform
 import argparse
 from pathlib import Path
+import io
+
+# Fix Unicode output on Windows
+if sys.platform == 'win32':
+    # Reconfigure stdout to use UTF-8
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Colors for terminal output
 class Colors:
@@ -37,19 +45,19 @@ def print_header(text):
 
 
 def print_success(text):
-    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}[OK] {text}{Colors.ENDC}")
 
 
 def print_error(text):
-    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+    print(f"{Colors.FAIL}[ERROR] {text}{Colors.ENDC}")
 
 
 def print_warning(text):
-    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+    print(f"{Colors.WARNING}[WARN] {text}{Colors.ENDC}")
 
 
 def print_info(text):
-    print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}[INFO] {text}{Colors.ENDC}")
 
 
 class ModbusMonitorBuilder:
