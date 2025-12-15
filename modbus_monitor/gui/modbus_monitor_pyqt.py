@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from threading import Thread
 import logging
+import socketio
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -33,62 +34,105 @@ except ImportError:
     print()
 
 # Relative imports from parent package
-from ..modbus_client import ModbusClientManager
 from ..data_exporter import DataExporter
 
 # Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class ModbusWorker(QObject):
-    """Worker thread do odczytywania sygnałów"""
+class WebSocketWorker(QObject):
+    """Worker thread do komunikacji z serwerem WebSocket"""
     
-    signals_read = pyqtSignal(list)  # Emituje sygnały po odczytaniu
-    error_occurred = pyqtSignal(str)  # Emituje błędy
+    signals_updated = pyqtSignal(list)  # Emituje zaktualizowane sygnały
+    connection_status = pyqtSignal(str)  # Połączenie: 'connected', 'disconnected', 'error'
+    error_occurred = pyqtSignal(str)    # Błąd
     
-    def __init__(self, modbus_manager):
+    def __init__(self):
         super().__init__()
-        self.modbus_manager = modbus_manager
-        self.running = False
-        self.settings = {}
-    
-    def start_polling(self, settings):
-        """Rozpocznij polling sygnałów"""
-        self.running = True
-        self.settings = settings
+        self.sio = socketio.Client()
+        self.signals_data = []
+        self.server_url = None
+        self.connected = False
         
-        while self.running:
-            try:
-                values = self.modbus_manager.read_registers(
-                    address=settings['start_address'],
-                    count=settings['count'],
-                    register_type=settings['register_type']
-                )
-                
-                if values is not None:
-                    signals = []
-                    for i, value in enumerate(values):
-                        signals.append({
-                            'id': i,
-                            'address': settings['start_address'] + i,
-                            'name': f"Sygnał {i + 1}",
-                            'value': value,
-                            'unit': '',
-                            'status': 'ok',
-                            'lastUpdate': datetime.now().strftime('%H:%M:%S')
-                        })
-                    self.signals_read.emit(signals)
-                else:
-                    self.error_occurred.emit("Błąd odczytu sygnałów")
-                
-                QThread.msleep(settings.get('interval', 1000))
-            
-            except Exception as e:
-                self.error_occurred.emit(str(e))
+        # Rejestruj event handlery
+        self.sio.on('connect', self.on_connect)
+        self.sio.on('disconnect', self.on_disconnect)
+        self.sio.on('signals_update', self.on_signals_update)
+        self.sio.on('error', self.on_error)
     
-    def stop_polling(self):
-        """Zatrzymaj polling"""
-        self.running = False
+    def connect(self, host, port):
+        """Połącz z serwerem WebSocket"""
+        try:
+            self.server_url = f"http://{host}:{port}"
+            logger.info(f"Połączanie z {self.server_url}...")
+            self.connection_status.emit('connecting')
+            
+            self.sio.connect(
+                self.server_url,
+                transports=['websocket'],
+                wait_timeout=10
+            )
+            return True
+        
+        except Exception as e:
+            error_msg = f"Błąd połączenia: {str(e)}"
+            logger.error(error_msg)
+            self.error_occurred.emit(error_msg)
+            self.connection_status.emit('error')
+            return False
+    
+    def disconnect(self):
+        """Rozłącz z serwerem"""
+        try:
+            if self.connected:
+                self.sio.disconnect()
+                self.connected = False
+        except Exception as e:
+            logger.error(f"Błąd rozpołączenia: {str(e)}")
+    
+    def on_connect(self):
+        """Handler połączenia"""
+        logger.info("✓ Połączono z serwerem")
+        self.connected = True
+        self.connection_status.emit('connected')
+    
+    def on_disconnect(self):
+        """Handler rozłączenia"""
+        logger.info("Rozłączono z serwera")
+        self.connected = False
+        self.connection_status.emit('disconnected')
+    
+    def on_signals_update(self, data):
+        """Handler aktualizacji sygnałów"""
+        try:
+            if isinstance(data, str):
+                data = json.loads(data)
+            
+            # Konwertuj na format zgodny z GUI
+            signals = []
+            if isinstance(data, list):
+                for i, value in enumerate(data):
+                    signals.append({
+                        'id': i,
+                        'address': i,
+                        'name': f"Sygnał {i + 1}",
+                        'value': value,
+                        'unit': '',
+                        'status': 'ok',
+                        'lastUpdate': datetime.now().strftime('%H:%M:%S')
+                    })
+            
+            self.signals_data = signals
+            self.signals_updated.emit(signals)
+        
+        except Exception as e:
+            logger.error(f"Błąd przetwarzania danych: {str(e)}")
+    
+    def on_error(self, data):
+        """Handler błędu"""
+        error_msg = str(data) if data else "Nieznany błąd"
+        logger.error(f"Błąd serwera: {error_msg}")
+        self.error_occurred.emit(error_msg)
 
 
 class ModbusMonitorApp(QMainWindow):
@@ -102,7 +146,6 @@ class ModbusMonitorApp(QMainWindow):
         # Don't set style - use system default
         # self.setStyle('Fusion') causes error in PyQt6
         
-        self.modbus_manager = ModbusClientManager()
         self.data_exporter = DataExporter()
         
         self.signals_data = []
@@ -110,8 +153,8 @@ class ModbusMonitorApp(QMainWindow):
         self.read_count = 0
         self.error_count = 0
         
-        self.worker_thread = None
-        self.worker = None
+        self.websocket_thread = None
+        self.websocket_worker = None
         
         self.init_ui()
         self.setup_styles()
@@ -150,43 +193,18 @@ class ModbusMonitorApp(QMainWindow):
         self.statusBar.showMessage("Gotowy")
     
     def create_settings_panel(self):
-        """Utwórz panel ustawień"""
+        """Utwórz panel ustawien"""
         group = QGroupBox("Konfiguracja")
         layout = QFormLayout()
         
         # Połączenie
         self.host_input = QLineEdit("localhost")
         self.port_input = QSpinBox()
-        self.port_input.setValue(5020)  # Default to test server
+        self.port_input.setValue(5020)  # Port serwera WebSocket
         self.port_input.setMaximum(65535)
         
-        self.connection_type = QComboBox()
-        self.connection_type.addItems(["tcp", "serial"])
-        
         layout.addRow("Host/IP:", self.host_input)
-        layout.addRow("Port:", self.port_input)
-        layout.addRow("Typ Połączenia:", self.connection_type)
-        
-        # Sygnały
-        self.signal_count_input = QSpinBox()
-        self.signal_count_input.setValue(5)
-        self.signal_count_input.setMaximum(20)
-        
-        self.start_address_input = QSpinBox()
-        self.start_address_input.setValue(0)
-        
-        self.register_type = QComboBox()
-        self.register_type.addItems(["holding", "input", "coil", "discrete"])
-        
-        self.interval_input = QSpinBox()
-        self.interval_input.setValue(1000)
-        self.interval_input.setMinimum(100)
-        self.interval_input.setSingleStep(100)
-        
-        layout.addRow("Liczba Sygnałów:", self.signal_count_input)
-        layout.addRow("Adres Startowy:", self.start_address_input)
-        layout.addRow("Typ Rejestru:", self.register_type)
-        layout.addRow("Interwał (ms):", self.interval_input)
+        layout.addRow("Port (serwer):", self.port_input)
         
         # Przyciski
         self.connect_btn = QPushButton("Połącz")
@@ -203,7 +221,7 @@ class ModbusMonitorApp(QMainWindow):
         self.error_count_label = QLabel("0")
         
         layout.addRow("Status:", self.status_label)
-        layout.addRow("Odczytów:", self.read_count_label)
+        layout.addRow("Aktualizacji:", self.read_count_label)
         layout.addRow("Błędów:", self.error_count_label)
         
         group.setLayout(layout)
@@ -315,54 +333,46 @@ class ModbusMonitorApp(QMainWindow):
         self.setStyleSheet(dark_stylesheet)
     
     def toggle_connection(self):
-        """Przełącz połączenie"""
+        """Przelaćz połączenie"""
         if self.connected:
-            self.disconnect_modbus()
+            self.disconnect_server()
         else:
-            self.connect_modbus()
+            self.connect_server()
     
-    def connect_modbus(self):
-        """Połącz z urządzeniem Modbus"""
+    def connect_server(self):
+        """Połącz z serwerem WebSocket"""
         try:
             host = self.host_input.text()
             port = self.port_input.value()
-            connection_type = self.connection_type.currentText().lower()
             
-            success = self.modbus_manager.connect(
-                host=host,
-                port=port,
-                connection_type=connection_type,
-                timeout=5,
-                unit_id=1
-            )
+            # Utwórz worker thread
+            self.websocket_thread = QThread()
+            self.websocket_worker = WebSocketWorker()
+            self.websocket_worker.moveToThread(self.websocket_thread)
             
-            if success:
-                self.connected = True
-                self.connect_btn.setText("Rozłącz")
-                self.connect_btn.setStyleSheet("background-color: #ef4444; color: white; font-weight: bold;")
-                self.status_label.setText("Połączony")
-                self.status_label.setStyleSheet("color: #22c55e;")
-                self.statusBar.showMessage(f"Połączono z {host}:{port}")
-                
-                # Uruchom worker thread
-                self.start_polling()
-            else:
-                QMessageBox.critical(self, "Błąd", "Nie udało się połączyć")
+            # Połącz sygnały
+            self.websocket_thread.started.connect(lambda: self.websocket_worker.connect(host, port))
+            self.websocket_worker.signals_updated.connect(self.update_signals_table)
+            self.websocket_worker.connection_status.connect(self.update_connection_status)
+            self.websocket_worker.error_occurred.connect(self.handle_error)
+            
+            # Uruchom wątek
+            self.websocket_thread.start()
+            self.statusBar.showMessage(f"Połączanie z {host}:{port}...")
         
         except Exception as e:
             QMessageBox.critical(self, "Błąd", f"Błąd połączenia: {str(e)}")
     
-    def disconnect_modbus(self):
-        """Rozłącz z urządzeniem Modbus"""
+    def disconnect_server(self):
+        """Rozłącz z serwerem"""
         try:
-            if self.worker:
-                self.worker.stop_polling()
+            if self.websocket_worker:
+                self.websocket_worker.disconnect()
             
-            if self.worker_thread:
-                self.worker_thread.quit()
-                self.worker_thread.wait()
+            if self.websocket_thread:
+                self.websocket_thread.quit()
+                self.websocket_thread.wait()
             
-            self.modbus_manager.disconnect()
             self.connected = False
             self.connect_btn.setText("Połącz")
             self.connect_btn.setStyleSheet("background-color: #22c55e; color: white; font-weight: bold;")
@@ -373,24 +383,28 @@ class ModbusMonitorApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Błąd", f"Błąd rozłączenia: {str(e)}")
     
-    def start_polling(self):
-        """Rozpocznij polling sygnałów"""
-        self.worker_thread = QThread()
-        self.worker = ModbusWorker(self.modbus_manager)
-        self.worker.moveToThread(self.worker_thread)
+    def update_connection_status(self, status):
+        """Zaktualizuj status połączenia"""
+        if status == 'connected':
+            self.connected = True
+            self.connect_btn.setText("Rozłącz")
+            self.connect_btn.setStyleSheet("background-color: #ef4444; color: white; font-weight: bold;")
+            self.status_label.setText("Połączony")
+            self.status_label.setStyleSheet("color: #22c55e;")
+            self.statusBar.showMessage("Połączono z serwerem")
         
-        settings = {
-            'start_address': self.start_address_input.value(),
-            'count': self.signal_count_input.value(),
-            'register_type': self.register_type.currentText().lower(),
-            'interval': self.interval_input.value()
-        }
+        elif status == 'disconnected':
+            self.connected = False
+            self.connect_btn.setText("Połącz")
+            self.connect_btn.setStyleSheet("background-color: #22c55e; color: white; font-weight: bold;")
+            self.status_label.setText("Rozłączony")
+            self.status_label.setStyleSheet("color: #ef4444;")
+            self.statusBar.showMessage("Rozłączono z serwera")
         
-        self.worker_thread.started.connect(lambda: self.worker.start_polling(settings))
-        self.worker.signals_read.connect(self.update_signals_table)
-        self.worker.error_occurred.connect(self.handle_error)
-        
-        self.worker_thread.start()
+        elif status == 'error':
+            self.connect_btn.setText("Połącz")
+            self.status_label.setText("Błąd")
+            self.status_label.setStyleSheet("color: #f59e0b;")
     
     def update_signals_table(self, signals):
         """Zaktualizuj tabelę sygnałów"""
@@ -458,7 +472,7 @@ class ModbusMonitorApp(QMainWindow):
     
     def clear_data(self):
         """Wyczyść dane"""
-        reply = QMessageBox.question(self, "Potwierdzenie", "Na pewno wyczyścić wszystkie dane?")
+        reply = QMessageBox.question(self, "Potwierdzenie", "Na pewno wyczyść wszystkie dane?")
         if reply == QMessageBox.StandardButton.Yes:
             self.signals_table.setRowCount(0)
             self.signals_data = []
@@ -470,7 +484,7 @@ class ModbusMonitorApp(QMainWindow):
     def closeEvent(self, event):
         """Obsłuż zamykanie aplikacji"""
         if self.connected:
-            self.disconnect_modbus()
+            self.disconnect_server()
         event.accept()
 
 
