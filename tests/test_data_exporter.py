@@ -16,6 +16,7 @@ import os
 import json
 import csv
 import tempfile
+import time
 from pathlib import Path
 from datetime import datetime
 import sys
@@ -327,6 +328,7 @@ class TestDataExporterIntegration:
         exporter = DataExporter(export_dir=str(tmp_path))
         
         filepath1 = exporter.export_to_json(sample_signals)
+        time.sleep(1)  # Wait 1 second to ensure different timestamp
         filepath2 = exporter.export_to_json(sample_signals)
         
         # Files should be different (due to timestamp)
