@@ -41,34 +41,28 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
-      - name: Install test dependencies first
+      - name: Install test dependencies
         run: |
           pip install --quiet pytest pytest-cov pytest-mock
 
-      - name: Create slim requirements (no GUI) for headless CI
+      - name: Install core dependencies for CI
         run: |
-          grep -v 'PyQt6' requirements.txt | grep -v 'libgl1' > requirements-ci.txt
-          echo "Core dependencies prepared for CI environment"
-          head -20 requirements-ci.txt
+          # Install essential packages first (without GUI)
+          pip install --quiet Flask==2.3.3 Werkzeug==2.3.7
+          pip install --quiet pymodbus==3.1.0
+          pip install --quiet SQLAlchemy==2.0.21
+          pip install --quiet openpyxl==3.1.2 pandas==2.0.3
+          pip install --quiet python-dotenv==1.0.0 python-decouple==3.8
+          pip install --quiet requests==2.31.0 click==8.1.7
+          pip install --quiet colorlog==6.7.0
+          pip install --quiet websocket-client==1.9.0
+          pip install --quiet plyer==2.1.0 email-validator==2.0.0
 
-      - name: Install project dependencies
+      - name: Verify essential packages
         run: |
-          pip install --quiet -r requirements-ci.txt || (
-            echo "Installation failed, trying with more aggressive cleanup..."
-            grep -E '^(Flask|pymodbus|SQLAlchemy|openpyxl|pandas|python|click|requests|colorlog)' requirements.txt > requirements-minimal.txt
-            pip install --quiet -r requirements-minimal.txt || echo "Partial installation failed, continuing with core packages..."
-          )
-        continue-on-error: true
-
-      - name: Verify pytest is installed
-        run: |
+          python -c "import pymodbus; print(f'pymodbus {pymodbus.__version__} installed')"
           python -c "import pytest; print(f'pytest {pytest.__version__} installed')"
-
-      - name: Lint with flake8
-        continue-on-error: true
-        run: |
-          pip install --quiet flake8 || true
-          flake8 modbus_monitor tests --max-line-length=100 --count --statistics || true
+          python -c "import flask; print(f'Flask {flask.__version__} installed')"
 
       - name: Run tests
         run: |
