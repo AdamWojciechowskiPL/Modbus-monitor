@@ -175,6 +175,7 @@ def mock_modbus_client():
     IMPORTANT: For F32 format, read_holding_registers should return U16 pairs
     that will be converted to F32 by the client code.
     For S16/U16 format, return raw values directly.
+    For coils/discrete inputs, return bits directly.
     """
     client = MagicMock()
     
@@ -215,15 +216,18 @@ def mock_modbus_client():
         else:
             return MockModbusResponse(registers=input_raw)
     
+    def read_coils_side_effect(*args, **kwargs):
+        count = kwargs.get('count', 3)
+        return MockModbusResponse(bits=TestData.COILS[:count])
+    
+    def read_discrete_side_effect(*args, **kwargs):
+        count = kwargs.get('count', 2)
+        return MockModbusResponse(bits=TestData.DISCRETE_INPUTS[:count])
+    
     client.read_holding_registers.side_effect = read_holding_side_effect
     client.read_input_registers.side_effect = read_input_side_effect
-    
-    client.read_coils.return_value = MockModbusResponse(
-        bits=TestData.COILS[:3]
-    )
-    client.read_discrete_inputs.return_value = MockModbusResponse(
-        bits=TestData.DISCRETE_INPUTS[:2]
-    )
+    client.read_coils.side_effect = read_coils_side_effect
+    client.read_discrete_inputs.side_effect = read_discrete_side_effect
     
     # Setup return values for write operations
     client.write_register.return_value = MockModbusResponse()
