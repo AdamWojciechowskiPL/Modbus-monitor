@@ -14,13 +14,13 @@ setup(
     description="Professional Modbus TCP/RTU monitoring application with real-time dashboard, alerts, and data export",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourusername/modbus-monitor",
+    author="Adam Wojciechowski",
+    author_email="ad.wojciechowski@gmail.com",
+    url="https://github.com/AdamWojciechowskiPL/Modbus-monitor",
     project_urls={
-        "Documentation": "https://github.com/yourusername/modbus-monitor/wiki",
-        "Source Code": "https://github.com/yourusername/modbus-monitor",
-        "Bug Tracker": "https://github.com/yourusername/modbus-monitor/issues",
+        "Documentation": "https://github.com/AdamWojciechowskiPL/Modbus-monitor/wiki",
+        "Source Code": "https://github.com/AdamWojciechowskiPL/Modbus-monitor",
+        "Bug Tracker": "https://github.com/AdamWojciechowskiPL/Modbus-monitor/issues",
     },
     
     # License
@@ -108,9 +108,11 @@ setup(
             "pylint>=2.17.0",
             "flake8>=6.0.0",
             "mypy>=1.4.0",
+            "isort>=5.12.0",
+            "pytest-mock>=3.11.0",
         ],
         
-        # All extras
+        # All extras (combines web, desktop, alerts, postgres, build, dev)
         "all": [
             "Flask-SocketIO>=5.3.0",
             "python-socketio>=5.9.0",
@@ -121,13 +123,19 @@ setup(
             "email-validator>=2.0.0",
             "psycopg2-binary>=2.9.0",
             "pyinstaller>=6.1.0",
+            "wheel>=0.41.0",
             "pytest>=7.4.0",
+            "pytest-cov>=4.1.0",
             "black>=23.7.0",
             "pylint>=2.17.0",
+            "flake8>=6.0.0",
+            "mypy>=1.4.0",
+            "isort>=5.12.0",
+            "pytest-mock>=3.11.0",
         ],
     },
     
-    # Entry Points (optional - dla setuptools console scripts)
+    # Entry Points (for console scripts)
     entry_points={
         "console_scripts": [
             "modbus-monitor=modbus_monitor_pyqt:main",
@@ -164,10 +172,4 @@ setup(
         "serial",
         "alerts",
     ],
-    
-    # Documentation
-    documentation_url="https://github.com/yourusername/modbus-monitor/wiki",
-    
-    # Python Implementation
-    python_requires=">=3.8",
 )
