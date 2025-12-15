@@ -8,7 +8,7 @@ Werkzeug==2.3.7
 Flask-SocketIO==5.3.4
 python-socketio==5.9.0
 python-engineio==4.7.1
-websocket-client>=11.0  # Required for WebSocket support in PyQt GUI
+websocket-client==1.9.0  # Required for WebSocket support in PyQt GUI
 
 # Modbus
 pymodbus==3.1.0
