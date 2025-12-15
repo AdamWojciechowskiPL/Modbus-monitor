@@ -14,11 +14,20 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread, QObject
 from PyQt6.QtGui import QIcon, QColor, QFont
-from PyQt6.QtChart import QChart, QChartView, QLineSeries
+
+# Try to import QtChart - if fails, disable chart features
+try:
+    from PyQt6.QtChart import QChart, QChartView, QLineSeries
+    CHARTS_AVAILABLE = True
+except ImportError:
+    CHARTS_AVAILABLE = False
+    print("⚠️  Warning: PyQt6.QtChart not available. Install with: pip install PyQt6-Charts")
+
 from PyQt6.QtCore import QPointF
 
-from modbus_client import ModbusClientManager
-from data_exporter import DataExporter
+# Relative imports from parent package
+from ..modbus_client import ModbusClientManager
+from ..data_exporter import DataExporter
 
 # Logging
 logging.basicConfig(level=logging.INFO)
@@ -137,13 +146,13 @@ class ModbusMonitorApp(QMainWindow):
         layout = QFormLayout()
         
         # Połączenie
-        self.host_input = QLineEdit("192.168.1.100")
+        self.host_input = QLineEdit("localhost")
         self.port_input = QSpinBox()
-        self.port_input.setValue(502)
+        self.port_input.setValue(5020)  # Default to test server
         self.port_input.setMaximum(65535)
         
         self.connection_type = QComboBox()
-        self.connection_type.addItems(["TCP", "Serial"])
+        self.connection_type.addItems(["tcp", "serial"])
         
         layout.addRow("Host/IP:", self.host_input)
         layout.addRow("Port:", self.port_input)
@@ -158,7 +167,7 @@ class ModbusMonitorApp(QMainWindow):
         self.start_address_input.setValue(0)
         
         self.register_type = QComboBox()
-        self.register_type.addItems(["Holding", "Input", "Coil", "Discrete"])
+        self.register_type.addItems(["holding", "input", "coil", "discrete"])
         
         self.interval_input = QSpinBox()
         self.interval_input.setValue(1000)
