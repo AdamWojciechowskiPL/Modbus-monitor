@@ -11,7 +11,7 @@ let charts = {};
 
 socket.on('connect', () => {
     console.log('✓ Połączono z serwerem WebSocket');
-    updateConnectionStatus('connected');
+    // updateConnectionStatus('connected'); // Will be done when modbus connects
 });
 
 socket.on('disconnect', () => {
@@ -58,15 +58,6 @@ socket.on('signals_update', (data) => {
 socket.on('alerts_update', (data) => {
     alertsData = data.alerts || [];
     updateAlertsDisplay();
-    
-    // Pokaż badge z ilością alertów
-    const alertCount = alertsData.length;
-    if (alertCount > 0) {
-        document.getElementById('alertCount').textContent = alertCount;
-        document.getElementById('alertCount').style.display = 'inline-block';
-    } else {
-        document.getElementById('alertCount').style.display = 'none';
-    }
 });
 
 socket.on('alert_rule_added', (data) => {
@@ -110,16 +101,20 @@ function disconnectModbus() {
 
 function updateConnectionStatus(status) {
     connectionStatus = status;
-    const badge = document.getElementById('connectionStatus');
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    
+    if (!dot || !text) {
+        console.warn('Status indicators not found in DOM');
+        return;
+    }
     
     if (status === 'connected') {
-        badge.innerHTML = '<span class="status-dot connected"></span><span>Połączono</span>';
-        badge.classList.remove('status-disconnected');
-        badge.classList.add('status-connected');
+        dot.classList.remove('disconnected');
+        text.textContent = 'Połączono';
     } else {
-        badge.innerHTML = '<span class="status-dot disconnected"></span><span>Brak połączenia</span>';
-        badge.classList.remove('status-connected');
-        badge.classList.add('status-disconnected');
+        dot.classList.add('disconnected');
+        text.textContent = 'Brak połączenia';
     }
 }
 
@@ -127,26 +122,31 @@ function updateSignalsDisplay() {
     const container = document.getElementById('signalsList');
     
     if (signalsData.length === 0) {
-        container.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Brak danych</div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📡</div><p>Brak danych</p></div>';
         return;
     }
     
     let html = '';
     signalsData.forEach(signal => {
-        const statusColor = signal.status === 'ok' ? '#22c55e' : '#ef4444';
+        const statusClass = signal.status === 'ok' ? 'badge-success' : 'badge-danger';
+        const statusText = signal.status === 'ok' ? '✓ OK' : '✗ ERROR';
+        const time = new Date(signal.lastUpdate).toLocaleTimeString('pl-PL', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
         html += `
-            <div class="signal-card">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="signal-name">${signal.name}</div>
-                        <div class="signal-value">${signal.value.toFixed(2)}</div>
-                        <div class="signal-address">Adres: ${signal.address}</div>
-                    </div>
-                    <span class="badge" style="background: ${statusColor}; color: white;">
-                        ${signal.status === 'ok' ? '✓ OK' : '✗ ERROR'}
-                    </span>
+            <div class="card glass signal-item">
+                <div class="signal-name">${signal.name}</div>
+                <div class="signal-value">${typeof signal.value === 'number' ? signal.value.toFixed(2) : signal.value}</div>
+                <div class="signal-meta">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem;">Address: ${signal.address}</span>
+                    <span class="badge ${statusClass}">${statusText}</span>
                 </div>
-                <small class="text-muted">Aktualizacja: ${new Date(signal.lastUpdate).toLocaleTimeString('pl-PL')}</small>
+                <div class="signal-meta" style="padding-top: 0.75rem; border-top: 1px solid var(--glass-border); margin-top: 0.75rem;">
+                    <span style="color: var(--text-secondary); font-size: 0.75rem;">${time}</span>
+                </div>
             </div>
         `;
     });
@@ -158,23 +158,26 @@ function updateAlertsDisplay() {
     const container = document.getElementById('alertsList');
     
     if (alertsData.length === 0) {
-        container.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Brak aktywnych alertów</div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✔️</div><p>Brak aktywnych alertów</p></div>';
         return;
     }
     
     let html = '';
     alertsData.forEach(alert => {
-        const severityClass = alert.severity || 'warning';
+        const severity = alert.severity || 'warning';
         const time = new Date(alert.timestamp).toLocaleTimeString('pl-PL');
         
         html += `
-            <div class="alert-item ${severityClass}">
-                <div class="alert-severity ${severityClass}">
-                    ${alert.severity.toUpperCase()}
+            <div class="alert-item ${severity === 'critical' ? 'danger' : severity}">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">${alert.signal_name}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">${alert.alert_type}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">${alert.message}</div>
+                    </div>
+                    <span class="badge ${severity === 'critical' ? 'danger' : severity}">${severity.toUpperCase()}</span>
                 </div>
-                <div><strong>${alert.signal_name}</strong> - ${alert.alert_type}</div>
-                <div class="small text-muted">${alert.message}</div>
-                <small class="text-muted">${time}</small>
+                <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">${time}</small>
             </div>
         `;
     });
@@ -206,52 +209,109 @@ function addAlertRule() {
 }
 
 function showNotification(type, message) {
-    // Bootstrap toast
-    const alertHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="margin: 1rem;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        z-index: 1000;
+        animation: slideInRight 0.3s ease-out;
+        font-weight: 500;
+        max-width: 400px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    `;
+    
+    // Add icon based on type
+    let icon = '✓';
+    let accentColor = 'var(--success)';
+    if (type === 'danger' || type === 'error') {
+        icon = '✗';
+        accentColor = 'var(--danger)';
+    } else if (type === 'warning') {
+        icon = '⚠';
+        accentColor = 'var(--warning)';
+    } else if (type === 'info') {
+        icon = 'ℹ';
+        accentColor = 'var(--accent)';
+    }
+    
+    notification.innerHTML = `
+        <div style="display: flex; gap: 0.75rem; align-items: start;">
+            <span style="color: ${accentColor}; font-weight: bold; font-size: 1.2rem;">⚫</span>
+            <span>${message}</span>
         </div>
     `;
     
-    // Insert na top of container
-    const container = document.querySelector('.container-lg');
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = alertHTML;
-    container.insertBefore(tempDiv.firstChild, container.firstChild);
+    document.body.appendChild(notification);
     
-    // Auto-dismiss after 5 seconds
+    // Auto-remove after 5 seconds
     setTimeout(() => {
-        const alert = container.querySelector('.alert');
-        if (alert) alert.remove();
+        notification.style.animation = 'slideOutRight 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
     }, 5000);
 }
+
+// Add animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100px); }
+    }
+`;
+document.head.appendChild(style);
 
 // ============= CHARTS =============
 
 function initCharts() {
+    const signalsCtx = document.getElementById('chartSignals');
+    const alertsCtx = document.getElementById('chartAlerts');
+    
+    if (!signalsCtx || !alertsCtx) {
+        console.warn('Chart elements not found');
+        return;
+    }
+    
     // Signals Chart
-    const ctxSignals = document.getElementById('chartSignals').getContext('2d');
-    charts.signals = new Chart(ctxSignals, {
+    charts.signals = new Chart(signalsCtx.getContext('2d'), {
         type: 'line',
         data: {
             labels: [],
             datasets: [
                 {
-                    label: 'Sygnał 1',
+                    label: 'Signal 1',
                     data: [],
-                    borderColor: '#208080',
-                    backgroundColor: 'rgba(32, 128, 128, 0.1)',
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    borderWidth: 2,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#06b6d4'
                 },
                 {
-                    label: 'Sygnał 2',
+                    label: 'Signal 2',
                     data: [],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#8b5cf6'
                 }
             ]
         },
@@ -260,35 +320,48 @@ function initCharts() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'top',
+                    display: true,
+                    labels: {
+                        color: 'rgba(203, 213, 225, 0.7)',
+                        font: { family: "'Inter', sans-serif" }
+                    }
+                },
+                filler: {
+                    propagate: true
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    grid: { color: 'rgba(100, 200, 220, 0.1)' },
+                    ticks: { color: 'rgba(203, 213, 225, 0.5)' }
+                },
+                x: {
+                    grid: { color: 'rgba(100, 200, 220, 0.1)' },
+                    ticks: { color: 'rgba(203, 213, 225, 0.5)' }
                 }
             }
         }
     });
     
     // Alerts Chart
-    const ctxAlerts = document.getElementById('chartAlerts').getContext('2d');
-    charts.alerts = new Chart(ctxAlerts, {
+    charts.alerts = new Chart(alertsCtx.getContext('2d'), {
         type: 'doughnut',
         data: {
             labels: ['Critical', 'Warning', 'Info'],
             datasets: [{
                 data: [0, 0, 0],
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.5)',
-                    'rgba(245, 158, 11, 0.5)',
-                    'rgba(59, 130, 246, 0.5)'
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(6, 182, 212, 0.8)'
                 ],
                 borderColor: [
                     '#ef4444',
                     '#f59e0b',
-                    '#3b82f6'
-                ]
+                    '#06b6d4'
+                ],
+                borderWidth: 2
             }]
         },
         options: {
@@ -296,7 +369,12 @@ function initCharts() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(203, 213, 225, 0.7)',
+                        font: { family: "'Inter', sans-serif" },
+                        padding: 15
+                    }
                 }
             }
         }
@@ -308,8 +386,7 @@ function updateChartsData(signals) {
     
     const now = new Date().toLocaleTimeString('pl-PL', { 
         hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit'
+        minute: '2-digit'
     });
     
     // Add to labels (keep last 20)
@@ -328,7 +405,7 @@ function updateChartsData(signals) {
         }
     });
     
-    charts.signals.update('none'); // Update without animation for performance
+    charts.signals.update('none');
     
     // Update alerts chart
     const alertCounts = {
@@ -348,16 +425,8 @@ function updateChartsData(signals) {
 // ============= INITIALIZATION =============
 
 document.addEventListener('DOMContentLoaded', () => {
-    initCharts();
-    
-    // Request initial data
-    socket.emit('request_signals_update');
-});
-
-// Keyboard shortcut: Ctrl+K = Focus connection
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'k') {
-        e.preventDefault();
-        document.getElementById('inputHost').focus();
-    }
+    setTimeout(() => {
+        initCharts();
+        socket.emit('request_signals_update');
+    }, 500);
 });
