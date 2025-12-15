@@ -62,7 +62,7 @@ class AlertsManager:
             alert = None
             
             # Sprawdzenie threshold high
-            if rule.alert_type == 'threshold_high' and rule.threshold:
+            if rule.alert_type == 'threshold_high' and rule.threshold is not None:
                 if value > rule.threshold:
                     alert = {
                         'signal_name': signal_name,
@@ -74,7 +74,7 @@ class AlertsManager:
                     }
             
             # Sprawdzenie threshold low
-            elif rule.alert_type == 'threshold_low' and rule.threshold:
+            elif rule.alert_type == 'threshold_low' and rule.threshold is not None:
                 if value < rule.threshold:
                     alert = {
                         'signal_name': signal_name,
@@ -156,20 +156,23 @@ class NotificationManager:
     def send_desktop_notification(self, alert: Dict):
         """Wyślij powiadomienie na pulpicie"""
         try:
-            from plyer import notification
-            
-            title = f"🚨 {alert.get('severity', 'ALERT').upper()}"
-            message = alert.get('message', 'Nieznany alert')
-            
-            notification.notify(
-                title=title,
-                message=message,
-                timeout=10,
-                app_name='Modbus Monitor'
-            )
-            logger.info(f"✓ Powiadomienie desktop: {message}")
-        except ImportError:
-            logger.warning("plyer nie zainstalowany (powiadomienia desktop wyłączone)")
+            # Try to import plyer for desktop notifications
+            try:
+                from plyer import notification as plyer_notification
+                
+                title = f"🚨 {alert.get('severity', 'ALERT').upper()}"
+                message = alert.get('message', 'Nieznany alert')
+                
+                plyer_notification.notify(
+                    title=title,
+                    message=message,
+                    timeout=10,
+                    app_name='Modbus Monitor'
+                )
+                logger.info(f"✓ Powiadomienie desktop: {message}")
+            except ImportError:
+                logger.debug("plyer nie zainstalowany (powiadomienia desktop wyłączone)")
+                
         except Exception as e:
             logger.error(f"Błąd powiadomienia: {str(e)}")
     
