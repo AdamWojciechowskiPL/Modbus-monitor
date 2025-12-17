@@ -47,22 +47,20 @@ jobs:
 
       - name: Install core dependencies for CI
         run: |
-          # Install essential packages first (without GUI)
-          pip install --quiet Flask==2.3.3 Werkzeug==2.3.7
+          # Install essential packages for desktop app (PyQt6)
           pip install --quiet pymodbus==3.1.0
           pip install --quiet SQLAlchemy==2.0.21
           pip install --quiet openpyxl==3.1.2 pandas==2.0.3
           pip install --quiet python-dotenv==1.0.0 python-decouple==3.8
           pip install --quiet requests==2.31.0 click==8.1.7
           pip install --quiet colorlog==6.7.0
-          pip install --quiet websocket-client==1.9.0
           pip install --quiet plyer==2.1.0 email-validator==2.0.0
+          pip install --quiet msgpack==1.0.5
 
       - name: Verify essential packages
         run: |
           python -c "import pymodbus; print(f'pymodbus {pymodbus.__version__} installed')"
           python -c "import pytest; print(f'pytest {pytest.__version__} installed')"
-          python -c "import flask; print(f'Flask {flask.__version__} installed')"
 
       - name: Run tests
         run: |
@@ -83,7 +81,7 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
-  test-status:
+test-status:
     name: Test Status Check
     needs: tests
     runs-on: ubuntu-latest
