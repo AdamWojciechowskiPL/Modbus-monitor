@@ -158,7 +158,6 @@ class ModbusMonitorBuilder:
             "--onefile",
             "--windowed",
             "--add-data=modbus_monitor/gui:modbus_monitor/gui",
-            "--add-data=modbus_monitor/web:modbus_monitor/web",
             "--add-data=.env.example:.",
             "--hidden-import=PyQt6.QtCore",
             "--hidden-import=PyQt6.QtGui",

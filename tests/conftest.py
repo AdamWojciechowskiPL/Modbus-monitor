@@ -325,20 +325,6 @@ def modbus_config():
     }
 
 
-@pytest.fixture
-def app_config():
-    """Provide standard application configuration"""
-    return {
-        'DEBUG': True,
-        'TESTING': True,
-        'LOG_LEVEL': 'DEBUG',
-        'FLASK_ENV': 'testing',
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-        'SECRET_KEY': 'test-secret-key'
-    }
-
-
 # ============================================================================
 # Alert Fixtures
 # ============================================================================

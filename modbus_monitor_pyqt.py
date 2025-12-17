@@ -47,9 +47,6 @@ if __name__ == "__main__":
         print("  ✓ Alert management")
         print("  ✓ Data export (CSV, Excel, JSON)")
         print("  ✓ Dark theme support")
-        print("\n💻 Alternative entry points:")
-        print("  - python app.py (Simple Flask web)")
-        print("  - python dashboard_app.py (WebSocket dashboard)")
         print("\n" + "="*70 + "\n")
         
         # Run PyQt6 application
@@ -62,8 +59,6 @@ if __name__ == "__main__":
         print("  pip install -e \".[desktop]\"")
         print("\nOption 2 - Install PyQt6 packages manually:")
         print("  pip install PyQt6 PyQt6-Charts")
-        print("\nOption 3 - Use web interface instead:")
-        print("  python dashboard_app.py")
         print()
         sys.exit(1)
     
