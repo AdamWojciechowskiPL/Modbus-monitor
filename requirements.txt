@@ -7,7 +7,7 @@ pymodbus==3.1.0
 SQLAlchemy==2.0.21
 psycopg2-binary==2.9.7  # PostgreSQL support (optional)
 
-# Desktop GUI (PyQt6) - FIXED: Using compatible versions
+# Desktop GUI (PyQt6) - Using compatible versions
 PyQt6==6.6.0
 PyQt6-Qt6==6.6.0
 PyQt6-sip==13.6.0
