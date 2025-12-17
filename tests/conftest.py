@@ -218,11 +218,19 @@ def mock_modbus_client():
     
     def read_coils_side_effect(*args, **kwargs):
         count = kwargs.get('count', 3)
-        return MockModbusResponse(bits=TestData.COILS[:count])
+        # IMPORTANT: Return list directly, not MockModbusResponse
+        # modbus_client.py checks for .bits attribute
+        coils = TestData.COILS[:count]
+        response = MockModbusResponse(bits=coils)
+        return response
     
     def read_discrete_side_effect(*args, **kwargs):
         count = kwargs.get('count', 2)
-        return MockModbusResponse(bits=TestData.DISCRETE_INPUTS[:count])
+        # IMPORTANT: Return list directly, not MockModbusResponse
+        # modbus_client.py checks for .bits attribute
+        discrete = TestData.DISCRETE_INPUTS[:count]
+        response = MockModbusResponse(bits=discrete)
+        return response
     
     client.read_holding_registers.side_effect = read_holding_side_effect
     client.read_input_registers.side_effect = read_input_side_effect
