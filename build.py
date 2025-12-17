@@ -139,6 +139,27 @@ class ModbusMonitorBuilder:
             spec_file.unlink()
             print_success(f"Removed {spec_file}")
     
+    def check_icon(self):
+        """Check if icon file exists for current platform"""
+        if self.platform == "Windows":
+            icon_file = self.project_root / "modbus_icon.ico"
+        elif self.platform == "Darwin":
+            icon_file = self.project_root / "modbus_icon.icns"
+        else:  # Linux
+            icon_file = None
+        
+        if icon_file is None:
+            print_info("Icon not required for Linux")
+            return None
+        
+        if icon_file.exists():
+            print_success(f"Icon found: {icon_file}")
+            return icon_file
+        else:
+            print_warning(f"Icon not found: {icon_file}")
+            print_info("Build will continue without icon")
+            return None
+    
     def build_exe(self):
         """Build standalone executable with PyInstaller"""
         print_info("Building executable...")
@@ -171,11 +192,16 @@ class ModbusMonitorBuilder:
             "modbus_monitor_pyqt.py"
         ]
         
+        # Check for icon and add if exists
+        icon_file = self.check_icon()
+        if icon_file:
+            if self.platform == "Windows":
+                args.insert(3, f"--icon={icon_file}")
+            elif self.platform == "Darwin":
+                args.insert(3, f"--icon={icon_file}")
+        
         # Platform-specific arguments
-        if self.platform == "Windows":
-            args.insert(3, "--icon=modbus_icon.ico")
-        elif self.platform == "Darwin":  # macOS
-            args.insert(3, "--icon=modbus_icon.icns")
+        if self.platform == "Darwin":  # macOS
             args.extend(["--osx-bundle-identifier=com.modbusmonitor.app"])
         
         # Run PyInstaller
@@ -183,11 +209,31 @@ class ModbusMonitorBuilder:
         print_info("This may take 2-5 minutes...")
         
         try:
-            subprocess.run(args, check=True, cwd=self.project_root)
+            # Capture output for better error reporting
+            result = subprocess.run(
+                args,
+                cwd=self.project_root,
+                capture_output=False,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                print_error(f"Build failed with exit code {result.returncode}")
+                print_info("Troubleshooting tips:")
+                print_info("  1. Check that .env.example exists in project root")
+                print_info("  2. Check that modbus_monitor/gui directory exists")
+                print_info("  3. Try: python build.py --clean")
+                print_info("  4. Check PyInstaller version: pyinstaller --version")
+                return False
+            
             print_success("Build completed successfully")
             return True
+        
         except subprocess.CalledProcessError as e:
             print_error(f"Build failed: {e}")
+            return False
+        except Exception as e:
+            print_error(f"Unexpected error during build: {e}")
             return False
     
     def show_build_info(self):
@@ -228,7 +274,16 @@ class ModbusMonitorBuilder:
                 print("  - Copy modbus_monitor_pyqt to target machine")
                 print("  - May require system libraries (libGL, etc)")
         else:
-            print_error(f"Build output not found: {exe_path}")
+            # Try to find output anyway
+            if self.dist_path.exists():
+                files = list(self.dist_path.glob("*"))
+                if files:
+                    print_warning(f"Build output location may differ:")
+                    for f in files[:5]:
+                        print(f"  - {f}")
+            else:
+                print_error(f"Build output not found: {exe_path}")
+                print_warning("Check dist/ directory")
     
     def build(self, clean=False):
         """Execute full build process"""
