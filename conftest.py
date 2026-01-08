@@ -93,7 +93,7 @@ def sample_alert_data():
     return {
         'signal_name': 'Temperature',
         'alert_type': 'threshold_high',
-        'message': 'Temperature exceeded 50°C',
+        'message': 'Temperature exceeded 50\u00b0C',
         'severity': 'critical',
         'value': 55.0,
         'timestamp': datetime.now()
