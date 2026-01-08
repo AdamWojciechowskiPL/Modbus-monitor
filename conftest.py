@@ -55,7 +55,7 @@ def sample_signals():
             'address': 0,
             'name': 'Temperature',
             'value': 42.5,
-            'unit': '°C',
+            'unit': '\u00b0C',
             'status': 'ok',
             'lastUpdate': '2025-12-15 10:30:00'
         },
@@ -93,7 +93,7 @@ def sample_alert_data():
     return {
         'signal_name': 'Temperature',
         'alert_type': 'threshold_high',
-        'message': 'Temperature exceeded 50°C',
+        'message': 'Temperature exceeded 50\u00b0C',
         'severity': 'critical',
         'value': 55.0,
         'timestamp': datetime.now()

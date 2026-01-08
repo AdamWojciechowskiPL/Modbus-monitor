@@ -187,7 +187,7 @@ class TestDataExporterJSON:
         
         filepath = exporter.export_to_json(empty_signals)
         
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         assert data['signalCount'] == 0
@@ -344,7 +344,7 @@ class TestDataExporterIntegration:
         filepath = exporter.export_to_json(sample_signals)
         
         # Read back and verify
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         # Verify original data is preserved

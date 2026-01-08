@@ -427,7 +427,7 @@ def sample_signals():
     - rows[2]: Humidity
     """
     return [
-        {'name': 'Temperature', 'value': 25.5, 'unit': '°C'},
+        {'name': 'Temperature', 'value': 25.5, 'unit': '\u00b0C'},
         {'name': 'Pressure', 'value': 1013.25, 'unit': 'hPa'},
         {'name': 'Humidity', 'value': 45.0, 'unit': '%'}
     ]
