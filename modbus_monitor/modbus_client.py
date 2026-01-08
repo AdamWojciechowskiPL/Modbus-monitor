@@ -128,8 +128,11 @@ class ModbusClientManager:
             if unit_id is None:
                 unit_id = self.unit_id
             
-            # Jeśli F32, czytaj 2x więcej rejestrów
-            read_count = count * 2 if data_format == 'f32' else count
+            if register_type in ('coil', 'discrete'):
+                read_count = count
+            else:
+                # Jeśli F32, czytaj 2x więcej rejestrów
+                read_count = count * 2 if data_format == 'f32' else count
             
             logger.debug(f"Reading {read_count} registers (format: {data_format})")
             
@@ -167,6 +170,12 @@ class ModbusClientManager:
                 logger.error(f"Błąd Modbus: {result}")
                 return None
             
+            if register_type in ('coil', 'discrete'):
+                if hasattr(result, 'bits'):
+                    return list(result.bits)[:count]
+                logger.error(f"Brak danych bitów w odpowiedzi: {result}")
+                return None
+
             if hasattr(result, 'registers'):
                 raw_values = result.registers
                 logger.debug(f"Raw registers: {raw_values[:10]}...")
@@ -196,9 +205,6 @@ class ModbusClientManager:
                 
                 else:
                     return raw_values
-            
-            elif hasattr(result, 'bits'):
-                return result.bits
             
             else:
                 logger.error(f"Brak danych w odpowiedzi: {result}")
