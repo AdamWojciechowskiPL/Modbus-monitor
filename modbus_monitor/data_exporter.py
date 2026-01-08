@@ -17,6 +17,15 @@ class DataExporter:
         self.export_dir = export_dir
         Path(export_dir).mkdir(exist_ok=True)
         self._last_export_time = None
+
+    def _ensure_writable_export_dir(self):
+        """Upewnij się, że katalog eksportu jest zapisywalny."""
+        if not os.path.isdir(self.export_dir):
+            raise FileNotFoundError(f"Katalog eksportu nie istnieje: {self.export_dir}")
+
+        dir_mode = os.stat(self.export_dir).st_mode
+        if dir_mode & 0o222 == 0:
+            raise PermissionError(f"Brak uprawnień do zapisu w katalogu: {self.export_dir}")
     
     def _generate_filename(self, extension):
         """Generuj unikalną nazwę pliku"""
@@ -42,6 +51,7 @@ class DataExporter:
             str: Ścieżka do pliku
         """
         try:
+            self._ensure_writable_export_dir()
             if not filename:
                 filename = self._generate_filename('csv')
             
@@ -91,6 +101,7 @@ class DataExporter:
             str: Ścieżka do pliku
         """
         try:
+            self._ensure_writable_export_dir()
             if not filename:
                 filename = self._generate_filename('xlsx')
             
@@ -165,6 +176,7 @@ class DataExporter:
             str: Ścieżka do pliku
         """
         try:
+            self._ensure_writable_export_dir()
             if not filename:
                 filename = self._generate_filename('json')
             
