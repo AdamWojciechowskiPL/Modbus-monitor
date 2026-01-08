@@ -80,18 +80,17 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
           verbose: true
-
-test-status:
-    name: Test Status Check
-    needs: tests
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check test results
-        run: |
-          if [ "${{ needs.tests.result }}" == "failure" ]; then
-            echo "❌ Tests failed"
-            exit 1
-          else
-            echo "✅ All tests passed"
-          fi
+  test-status:
+      name: Test Status Check
+      needs: tests
+      runs-on: ubuntu-latest
+      if: always()
+      steps:
+        - name: Check test results
+          run: |
+            if [ "${{ needs.tests.result }}" == "failure" ]; then
+              echo "❌ Tests failed"
+              exit 1
+            else
+              echo "✅ All tests passed"
+            fi
