@@ -55,7 +55,7 @@ def sample_signals():
             'address': 0,
             'name': 'Temperature',
             'value': 42.5,
-            'unit': '°C',
+            'unit': '\u00b0C',
             'status': 'ok',
             'lastUpdate': '2025-12-15 10:30:00'
         },
